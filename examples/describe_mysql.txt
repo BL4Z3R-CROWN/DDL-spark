@@ -1,0 +1,11 @@
+Field | Type | Null | Key | Default | Extra
+id | int(11) | NO | PRI | NULL | auto_increment
+full_name | varchar(255) | NO |  | NULL | 
+email | varchar(255) | YES | UNI | NULL | 
+age | tinyint(4) | YES |  | NULL | 
+salary | decimal(10,2) | YES |  | 0.00 | 
+is_active | tinyint(1) | NO |  | 1 | 
+hired_at | datetime | YES |  | NULL | 
+profile_json | json | YES |  | NULL | 
+avatar | blob | YES |  | NULL | 
+created_at | timestamp | YES |  | CURRENT_TIMESTAMP | 
