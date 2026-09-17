@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DDL → PySpark Converter — Documentation</title>
+<meta name="description" content="Complete documentation for DDL to PySpark Schema Converter - editable per-field, API, CLI, library, sharing." />
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg2: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --border2: #cbd5e1;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #7c5cff;
+    --accent2: #4f46e5;
+    --accent-light: #ede9fe;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --code-bg: #0f172a;
+    --code-fg: #e2e8f0;
+    --radius: 14px;
+    --max: 1200px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117;
+      --bg2: #1a1d27;
+      --card: #1a1d27;
+      --border: #2a2e42;
+      --border2: #3a3f5c;
+      --text: #e6e8f0;
+      --muted: #9aa0b8;
+      --accent-light: rgba(124,92,255,.12);
+      --code-bg: #0b0d14;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header {
+    position: sticky; top:0; z-index:20;
+    backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: var(--max); margin: 0 auto; padding: 14px 20px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .brand { display:flex; gap:12px; align-items:center; }
+  .logo {
+    width:40px; height:40px; border-radius:12px;
+    background: linear-gradient(135deg, var(--accent) 0%, #38bdf8 100%);
+    display:grid; place-items:center; font-weight:800; color:white;
+    box-shadow: 0 8px 24px rgba(124,92,255,.25);
+  }
+  .brand h1 { margin:0; font-size:18px; letter-spacing:-.02em; line-height:1.2; }
+  .brand p { margin:2px 0 0; color: var(--muted); font-size:12px; }
+  .header-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .btn {
+    appearance:none; border:1px solid var(--border); background: var(--card);
+    padding:8px 12px; border-radius:999px; font-size:12px; font-weight:700; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px; color: var(--text); text-decoration:none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    color: white; border-color: transparent; box-shadow: 0 4px 14px rgba(124,92,255,.25);
+  }
+  .btn:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  .layout {
+    max-width: var(--max); margin: 0 auto; padding: 0 20px 40px;
+    display:grid; grid-template-columns: 260px 1fr; gap: 28px;
+  }
+  @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .sidebar { display:none; } }
+  .sidebar {
+    position: sticky; top: 64px; height: fit-content; max-height: calc(100vh - 80px); overflow:auto;
+    padding: 18px 0;
+  }
+  .sidebar h3 {
+    font-size:11px; letter-spacing:.08em; text-transform:uppercase; color: var(--muted);
+    margin: 14px 0 8px; font-weight:800;
+  }
+  .sidebar a {
+    display:block; padding:6px 10px; border-radius:8px; font-size:13px; color: var(--muted); line-height:1.4;
+  }
+  .sidebar a:hover { background: var(--bg2); color: var(--text); text-decoration:none; }
+  .sidebar a.active { background: var(--accent-light); color: var(--accent); font-weight:700; }
+  .content {
+    min-width:0; padding-top: 10px;
+  }
+  .content h1 { font-size:32px; letter-spacing:-.02em; margin: 18px 0 8px; line-height:1.15; }
+  .content h2 {
+    font-size:22px; letter-spacing:-.02em; margin: 36px 0 12px; padding-bottom:8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .content h3 { font-size:16px; margin: 24px 0 8px; color: var(--text); }
+  .content h4 { font-size:14px; margin: 18px 0 8px; color: var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .content p { margin: 10px 0; color: var(--text); }
+  .content ul, .content ol { margin: 10px 0; padding-left: 22px; }
+  .content li { margin: 4px 0; }
+  .content li::marker { color: var(--muted); }
+  .content table {
+    width:100%; border-collapse:collapse; margin: 14px 0; font-size:13px;
+    border:1px solid var(--border); border-radius:12px; overflow:hidden;
+    display:block; max-width:100%; overflow:auto;
+  }
+  .content thead { background: var(--bg2); }
+  .content th { text-align:left; padding:10px 12px; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color: var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+  .content td { padding:9px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  .content tr:last-child td { border-bottom:none; }
+  .content code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .92em; background: var(--bg2); border:1px solid var(--border);
+    padding: 2px 6px; border-radius:6px; word-break: break-word;
+  }
+  .content pre {
+    margin:14px 0; padding:16px; background: var(--code-bg); color: var(--code-fg);
+    border-radius:12px; overflow:auto; border:1px solid var(--border);
+    line-height:1.6; font-size:12.5px;
+  }
+  .content pre code {
+    background: transparent; border: none; padding:0; color: inherit; font-size: inherit;
+  }
+  /* codehilite token colors (light) */
+  .codehilite { background: transparent; }
+  .content blockquote {
+    margin:14px 0; padding:12px 16px; border-left:4px solid var(--accent);
+    background: var(--accent-light); border-radius: 0 10px 10px 0; color: var(--text);
+  }
+  .badge {
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11px; padding:4px 8px; border-radius:999px;
+    background: var(--accent-light); border:1px solid #c4b5fd; color: var(--accent);
+    font-weight:700;
+  }
+  .hero {
+    margin:18px 0 20px; padding:20px; background: linear-gradient(135deg, var(--accent-light) 0%, transparent 100%);
+    border:1px solid var(--border); border-radius: var(--radius);
+  }
+  .hero p { margin:6px 0; color: var(--muted); font-size:13px; }
+  .kpi {
+    display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;
+  }
+  .kpi div {
+    flex:1; min-width:140px; padding:12px; background: var(--card); border:1px solid var(--border);
+    border-radius:12px; text-align:center;
+  }
+  .kpi strong { display:block; font-size:18px; color: var(--accent); }
+  .kpi span { font-size:11px; color: var(--muted); letter-spacing:.06em; text-transform:uppercase; font-weight:700; }
+  .callout {
+    margin:16px 0; padding:14px 16px; border-radius:12px; border:1px solid var(--border);
+    display:flex; gap:12px; align-items:flex-start; background: var(--card);
+  }
+  .callout-icon { font-size:18px; line-height:1; }
+  .footer {
+    max-width: var(--max); margin: 30px auto 0; padding: 18px 20px 30px;
+    border-top:1px solid var(--border); color: var(--muted); font-size:12px;
+    display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  }
+  .toc-mobile {
+    display:none; margin:14px 0; padding:12px; background: var(--bg2); border:1px solid var(--border); border-radius:12px;
+  }
+  @media (max-width:960px) { .toc-mobile { display:block; } }
+  .toc-mobile summary { font-weight:800; cursor:pointer; }
+  .anchor { scroll-margin-top: 80px; }
+  /* Print */
+  @media print {
+    header, .sidebar, .header-actions { display:none; }
+    .layout { grid-template-columns: 1fr; }
+    .content pre { white-space: pre-wrap; word-break: break-word; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">⚡</div>
+      <div>
+        <h1>DDL → PySpark Converter</h1>
+        <p>Documentation v2.1 • Editable Types • API • CLI • Library</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="badge">✦ MySQL • Postgres • Oracle • Hive • SQLite</span>
+      <a class="btn btn-primary" href="#" onclick="window.print(); return false;">🖨 Print / Save PDF</a>
+      <a class="btn" href="README.md" download>⬇ .md</a>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="hero" style="margin-top:0; padding:12px;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="badge">v2.1 editable</span>
+        <span class="badge">Flask + SQLAlchemy</span>
+      </div>
+      <div class="kpi" style="margin-top:10px;">
+        <div><strong>45+</strong><span>SQL Types</span></div>
+        <div><strong>3</strong><span>Interfaces</span></div>
+      </div>
+    </div>
+    <h3>Navigate</h3>
+    <a href="#ddl-pyspark-schema-converter-complete-documentation">Top</a>
+    <a href="#1-overview">1. Overview</a>
+    <a href="#2-key-features">2. Key Features</a>
+    <a href="#3-architecture--how-it-works">3. Architecture</a>
+    <a href="#4-type-mapping--sql--pyspark">4. Type Mapping</a>
+    <a href="#5-installation">5. Installation</a>
+    <a href="#6-usage--web-ui">6. Web UI</a>
+    <a href="#7-usage--editable-per-field-feature">7. Editable Feature</a>
+    <a href="#8-usage--rest-api">8. REST API</a>
+    <a href="#9-usage--cli">9. CLI</a>
+    <a href="#10-usage--python-library">10. Python Library</a>
+    <a href="#11-live-database-describe">11. Live DB</a>
+    <a href="#12-examples-by-database-dialect">12. Examples</a>
+    <a href="#13-sharing--distribution">13. Sharing</a>
+    <a href="#14-deployment-options">14. Deployment</a>
+    <a href="#15-security--performance">15. Security</a>
+    <a href="#16-troubleshooting--faq">16. FAQ</a>
+    <a href="#17-project-structure">17. Structure</a>
+    <a href="#18-contributing--roadmap">18. Roadmap</a>
+    <a href="#19-appendix--code-snippets">19. Appendix</a>
+    <h3>Quick Links</h3>
+    <a href="#" onclick="document.getElementById('content').scrollIntoView({behavior:'smooth'}); return false;">↑ Back to top</a>
+    <a href="README.md">README.md</a>
+    <a href="PUSH_TO_GITHUB.md">Push to GitHub guide</a>
+  </aside>
+
+  <main class="content" id="content">
+    <div class="hero">
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <span class="badge">⚡ Live at http://0.0.0.0:5000</span>
+        <span class="badge">Editable per-field types • Bulk • Decimal p/s</span>
+      </div>
+      <p><b>One parser for every dialect.</b> Paste <code>CREATE TABLE</code> or <code>DESCRIBE</code>, or connect live — get <code>pyspark.sql.types.StructType</code> instantly, then edit any field’s type inline.</p>
+    </div>
+
+    <details class="toc-mobile">
+      <summary>Table of Contents</summary>
+      <ol style="margin:8px 0 0; padding-left:18px; font-size:13px;">
+        <li><a href="#1-overview">Overview</a></li>
+        <li><a href="#2-key-features">Key Features</a></li>
+        <li><a href="#3-architecture--how-it-works">Architecture</a></li>
+        <li><a href="#4-type-mapping--sql--pyspark">Type Mapping</a></li>
+        <li><a href="#5-installation">Installation</a></li>
+        <li><a href="#6-usage--web-ui">Web UI</a></li>
+        <li><a href="#7-usage--editable-per-field-feature">Editable</a></li>
+        <li><a href="#8-usage--rest-api">REST API</a></li>
+        <li><a href="#9-usage--cli">CLI</a></li>
+        <li><a href="#10-usage--python-library">Library</a></li>
+        <li><a href="#11-live-database-describe">Live DB</a></li>
+        <li><a href="#12-examples-by-database-dialect">Examples</a></li>
+        <li><a href="#13-sharing--distribution">Sharing</a></li>
+        <li><a href="#14-deployment-options">Deployment</a></li>
+        <li><a href="#15-security--performance">Security</a></li>
+        <li><a href="#16-troubleshooting--faq">FAQ</a></li>
+      </ol>
+    </details>
+
+    <h1 id="ddl-pyspark-schema-converter-complete-documentation">DDL → PySpark Schema Converter — Complete Documentation</h1>
+<p><strong>Version:</strong> 2.1 (Editable Per-Field Types)<br />
+<strong>Author:</strong> Arena Agent<br />
+<strong>Date:</strong> 2026-09-17 (Africa/Lagos)<br />
+<strong>Stack:</strong> Python 3, Flask, SQLAlchemy, PySpark Types, Vanilla JS<br />
+<strong>Repo branch:</strong> <code>main</code> — commits <code>eddd6b5</code> (initial) → <code>94fb191</code> (editable)</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-overview">Overview</a></li>
+<li><a href="#2-key-features">Key Features</a></li>
+<li><a href="#3-architecture--how-it-works">Architecture — How It Works</a></li>
+<li><a href="#4-type-mapping--sql--pyspark">Type Mapping — SQL → PySpark</a></li>
+<li><a href="#5-installation">Installation</a></li>
+<li><a href="#6-usage--web-ui">Usage — Web UI</a></li>
+<li><a href="#7-usage--editable-per-field-feature">Usage — Editable Per-Field Feature</a></li>
+<li><a href="#8-usage--rest-api">Usage — REST API</a></li>
+<li><a href="#9-usage--cli">Usage — CLI</a></li>
+<li><a href="#10-usage--python-library">Usage — Python Library</a></li>
+<li><a href="#11-live-database-describe">Live Database DESCRIBE</a></li>
+<li><a href="#12-examples-by-database-dialect">Examples by Database Dialect</a></li>
+<li><a href="#13-sharing--distribution">Sharing &amp; Distribution</a></li>
+<li><a href="#14-deployment-options">Deployment Options</a></li>
+<li><a href="#15-security--performance">Security &amp; Performance</a></li>
+<li><a href="#16-troubleshooting--faq">Troubleshooting &amp; FAQ</a></li>
+<li><a href="#17-project-structure">Project Structure</a></li>
+<li><a href="#18-contributing--roadmap">Contributing &amp; Roadmap</a></li>
+<li><a href="#19-appendix--code-snippets">Appendix — Code Snippets</a></li>
+</ol>
+<hr />
+<h2 id="1-overview">1. Overview</h2>
+<p>The <strong>DDL → PySpark Schema Converter</strong> converts relational schema metadata into executable <code>pyspark.sql.types.StructType</code> code. It solves the painful manual translation you do when moving data from a warehouse (MySQL, Postgres, Oracle, SQL Server, Hive, SQLite, DuckDB) into a Spark pipeline.</p>
+<p>You give it <strong>any one</strong> of:</p>
+<ul>
+<li>Raw <code>CREATE TABLE</code> DDL (one or many tables, with <code>NOT NULL</code>, <code>DEFAULT</code>, <code>AUTO_INCREMENT</code>, <code>UNSIGNED</code>, quoted identifiers, <code>DECIMAL(p,s)</code>, <code>ARRAY&lt;…&gt;</code>, <code>MAP&lt;…, …&gt;</code>)</li>
+<li>Pasted <strong>DESCRIBE</strong> / <code>information_schema</code> output (pipe <code>|</code>, CSV, TSV, markdown, <code>column_name | data_type | is_nullable</code>)</li>
+<li>A <strong>live database connection</strong> — the app runs <code>inspector.get_columns(table)</code> (no rows fetched) and builds the schema</li>
+</ul>
+<p>It returns:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pyspark.sql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">StructType</span><span class="p">,</span> <span class="n">StructField</span><span class="p">,</span> <span class="n">StringType</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">,</span> <span class="n">DecimalType</span><span class="p">,</span> <span class="n">TimestampType</span><span class="p">,</span> <span class="n">BooleanType</span>
+
+<span class="n">employees_schema</span> <span class="o">=</span> <span class="n">StructType</span><span class="p">([</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;full_name&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span> <span class="n">DecimalType</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;is_active&quot;</span><span class="p">,</span> <span class="n">BooleanType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;hired_at&quot;</span><span class="p">,</span> <span class="n">TimestampType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">)</span>
+<span class="p">])</span>
+<span class="c1"># df = spark.createDataFrame([], schema=employees_schema)</span>
+</code></pre></div>
+
+<p>Plus a JSON view, a browsable column table, and — since v2 — <strong>inline editing of every field’s Spark type</strong>.</p>
+<p><strong>Who is it for?</strong></p>
+<ul>
+<li>Data Engineers migrating to Databricks / EMR / Spark</li>
+<li>Analysts who got a <code>DESCRIBE</code> dump from a DBA and need a Spark schema</li>
+<li>Teams who want a single source of truth for type mapping and to share it via Git</li>
+</ul>
+<hr />
+<h2 id="2-key-features">2. Key Features</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DDL Parser</strong></td>
+<td>Handles <code>CREATE TABLE [IF NOT EXISTS] schema.table (...)</code> with nested parentheses, commas inside <code>DECIMAL(10,2)</code>, quoted/bracketed/backticked identifiers, multi-table files, and fallback for bare column lists</td>
+</tr>
+<tr>
+<td><strong>DESCRIBE Parser</strong></td>
+<td>Auto-detects header names (<code>Field</code>, <code>column_name</code>, <code>Type</code>, <code>data_type</code>, <code>Null</code>, <code>is_nullable</code>), delimiters (<code>|</code>, <code>,</code>, <code>\t</code>, <code>;</code>, 2+ spaces), and MySQL <code>YES/NO</code> + Postgres <code>YES/NO</code> nullable semantics</td>
+</tr>
+<tr>
+<td><strong>Live DB</strong></td>
+<td>SQLAlchemy <code>inspector.get_columns()</code> + fallback <code>DESCRIBE</code> / <code>information_schema</code> query; SQLite <code>:memory:</code> demo auto-creates a sample table at <code>/tmp/demo_ddl2spark.db</code></td>
+</tr>
+<tr>
+<td><strong>Type Coverage</strong></td>
+<td>45+ SQL types → 14 Spark types (see §4); special cases <code>TINYINT(1)</code>→<code>BooleanType</code>, <code>BIT(1)</code>→<code>BooleanType</code>, <code>DECIMAL(p,s)</code>→<code>DecimalType(p,s)</code>, <code>ARRAY&lt;STRING&gt;</code>→<code>ArrayType</code>, <code>MAP&lt;…&gt;</code>→<code>MapType</code></td>
+</tr>
+<tr>
+<td><strong>Editable UI (v2)</strong></td>
+<td>Per-row dropdown, Decimal precision/scale inputs, nullable toggle, inline rename, row reset/remove, bulk apply, add column, instant code regeneration with correct imports</td>
+</tr>
+<tr>
+<td><strong>Outputs</strong></td>
+<td>Python code + JSON + usage snippet (<code>SparkSession</code> example) + downloadable <code>.py</code></td>
+</tr>
+<tr>
+<td><strong>Interfaces</strong></td>
+<td>Web UI (single-page, no CDN, preview in iframe), REST API (<code>/api/convert-ddl</code>, <code>/api/convert-describe</code>, <code>/api/connect</code>, <code>/api/health</code>), CLI (<code>cli.py</code>), Python library (<code>converter.py</code>)</td>
+</tr>
+<tr>
+<td><strong>Sharing</strong></td>
+<td>Git-ready, ZIP, <code>git bundle</code>, Docker-ready, GitHub Pages docs, PI P-installable</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-architecture-how-it-works">3. Architecture — How It Works</h2>
+<h3 id="31-high-level-flow">3.1 High-Level Flow</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">┌─────────────┐</span><span class="w">     </span><span class="err">┌──────────────────┐</span><span class="w">     </span><span class="err">┌─────────────────────┐</span><span class="w">     </span><span class="err">┌──────────────────┐</span>
+<span class="err">│</span><span class="w">  </span><span class="nx">Input</span><span class="w">      </span><span class="err">│────▶│</span><span class="w">  </span><span class="nx">Parser</span><span class="w"> </span><span class="nx">Layer</span><span class="w">    </span><span class="err">│────▶│</span><span class="w">  </span><span class="nx">Normalizer</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="nx">Mapper</span><span class="err">│────▶│</span><span class="w">  </span><span class="nx">Code</span><span class="w"> </span><span class="nx">Generator</span><span class="w">  </span><span class="err">│</span>
+<span class="err">│</span><span class="w">             </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">                  </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">                     </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">                  </span><span class="err">│</span>
+<span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">DDL</span><span class="w"> </span><span class="nx">text</span><span class="w">  </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">clean_ddl</span><span class="p">()</span><span class="w">    </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">normalize_sql_type</span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">inferImports</span><span class="p">()</span><span class="w"> </span><span class="err">│</span>
+<span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">DESCRIBE</span><span class="w">  </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">split_columns</span><span class="p">()</span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">map_sql_to_spark</span><span class="w">  </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">StructField</span><span class="p">()</span><span class="w">  </span><span class="err">│</span>
+<span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Live</span><span class="w"> </span><span class="nx">DB</span><span class="w">   </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">parse_ddl</span><span class="p">()</span><span class="w">    </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">Decimal</span><span class="o">/</span><span class="w"> </span><span class="nx">TINYINT</span><span class="w">  </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">StructType</span><span class="p">()</span><span class="w">   </span><span class="err">│</span>
+<span class="err">│</span><span class="w">             </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">parse_describe</span><span class="w"> </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w">   </span><span class="nx">special</span><span class="w"> </span><span class="nx">cases</span><span class="w">     </span><span class="err">│</span><span class="w">     </span><span class="err">│</span><span class="w"> </span><span class="err">•</span><span class="w"> </span><span class="nx">JSON</span><span class="w"> </span><span class="nx">view</span><span class="w">      </span><span class="err">│</span>
+<span class="err">└─────────────┘</span><span class="w">     </span><span class="err">└──────────────────┘</span><span class="w">     </span><span class="err">└─────────────────────┘</span><span class="w">     </span><span class="err">└──────────────────┘</span>
+<span class="w">         </span><span class="err">▲</span><span class="w">                       </span><span class="err">▲</span><span class="w">                          </span><span class="err">▲</span><span class="w">                      </span><span class="err">│</span>
+<span class="w">         </span><span class="err">│</span><span class="w">                       </span><span class="err">│</span><span class="w">                          </span><span class="err">│</span><span class="w">                      </span><span class="err">▼</span>
+<span class="w">   </span><span class="nx">Web</span><span class="w"> </span><span class="nx">UI</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">CLI</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">API</span><span class="w">      </span><span class="nx">db_utils</span><span class="p">.</span><span class="nx">py</span><span class="w">           </span><span class="nx">converter</span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="nx">TYPE_MAPPING</span><span class="w">    </span><span class="nx">Output</span><span class="p">:</span><span class="w"> </span><span class="p">.</span><span class="nx">py</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">JSON</span>
+</code></pre></div>
+
+<h3 id="32-detailed-workflows">3.2 Detailed Workflows</h3>
+<h4 id="a-ddl-workflow-post-apiconvert-ddl-or-ddl_to_pyspark">A. DDL Workflow (<code>POST /api/convert-ddl</code> or <code>ddl_to_pyspark()</code>)</h4>
+<ol>
+<li><strong>Clean</strong> <code>clean_ddl(ddl)</code> — strip <code>/* */</code> block comments, <code>--</code> line comments, <code>#</code> MySQL comments, normalize whitespace.</li>
+<li><strong>Find tables</strong> — regex <code>CREATE\s+(OR REPLACE)?\s*(TEMPORARY)?\s*TABLE\s+(IF NOT EXISTS)?\s+name\s*\(</code>, then scan for matching closing <code>)</code> respecting quotes/backticks and nested parens.</li>
+<li><strong>Split columns</strong> <code>split_columns(block)</code> — iterate character-by-character, tracking <code>depth_paren</code>, <code>depth_angle</code> (<code>&lt;…&gt;</code>), <code>depth_bracket</code>, and quote states (<code>'</code>, <code>"</code>, <code>`</code>). Split on commas only at depth 0.</li>
+<li><strong>Skip constraints</strong> — ignore lines starting <code>PRIMARY KEY</code>, <code>FOREIGN KEY</code>, <code>UNIQUE</code>, <code>CHECK</code>, <code>CONSTRAINT</code>, <code>KEY</code>, <code>INDEX</code>.</li>
+<li><strong>Parse column</strong> — regex <code>col_name \s+ remainder</code>. <code>col_name</code> handles <code>`name`</code>, <code>[name]</code>, <code>"name"</code>, or <code>name</code>.</li>
+<li><strong>Separate type vs. constraints</strong> — search remainder for earliest constraint keyword (<code>NOT NULL</code>, <code>PRIMARY KEY</code>, <code>DEFAULT</code>, <code>AUTO_INCREMENT</code>, <code>IDENTITY</code>, <code>COMMENT</code>, <code>COLLATE</code>, <code>WITH TIME ZONE</code> etc.) outside parentheses. <code>sql_type = remainder[:earliest]</code>, <code>constraint_part = remainder[earliest:]</code>.</li>
+<li><strong>Nullable</strong> — <code>False</code> if <code>NOT NULL</code> or <code>PRIMARY KEY</code> in constraint part, else <code>True</code>.</li>
+<li><strong>Map</strong> <code>map_sql_to_spark(sql_type)</code> → <code>spark_expr</code> (see §4).</li>
+<li><strong>Generate</strong> <code>generate_pyspark_code(columns, table_name)</code> → imports + <code>StructType</code>.</li>
+</ol>
+<p><em>Example trace for <code>salary DECIMAL(10,2) NOT NULL DEFAULT 0</code>:</em></p>
+<div class="codehilite"><pre><span></span><code><span class="nx">raw</span><span class="w"> </span><span class="nx">remainder</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;DECIMAL(10,2) NOT NULL DEFAULT 0&quot;</span>
+<span class="nx">earliest</span><span class="w"> </span><span class="nx">keyword</span><span class="w"> </span><span class="nx">at</span><span class="w"> </span><span class="mi">14</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;NOT NULL&quot;</span><span class="p">)</span>
+<span class="nx">sql_type</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;DECIMAL(10,2)&quot;</span>
+<span class="nx">constraint_part</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;NOT NULL DEFAULT 0&quot;</span>
+<span class="nx">nullable</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">False</span>
+<span class="nx">normalize_sql_type</span><span class="p">(</span><span class="s">&quot;DECIMAL(10,2)&quot;</span><span class="p">)</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="p">(</span><span class="s">&quot;DECIMAL&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;10,2&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">None</span><span class="p">)</span>
+<span class="nx">map</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="s">&quot;DecimalType(10,2)&quot;</span>
+</code></pre></div>
+
+<p>If <strong>no <code>CREATE TABLE</code> found</strong>, fallback: treat entire input as a comma/line-separated column list (handles pasted column lists without DDL wrapper).</p>
+<h4 id="b-describe-workflow-post-apiconvert-describe-or-describe_to_pyspark">B. DESCRIBE Workflow (<code>POST /api/convert-describe</code> or <code>describe_to_pyspark()</code>)</h4>
+<ol>
+<li><strong>Split lines</strong>, discard pure separator lines (<code>+---+</code>, <code>|---|</code> markdown).</li>
+<li><strong>Split rows</strong> <code>split_row()</code>:
+   - If <code>|</code> present → <code>strip('|').split('|')</code>
+   - Else if <code>\t</code> → split on tab
+   - Else if <code>,</code> → <code>csv.reader</code>
+   - Else if <code>;</code> → split on <code>;</code>
+   - Else → <code>re.split(r'\s{2,}', row)</code> (2+ spaces) or single space</li>
+<li><strong>Detect header indices</strong> — scan <code>header_lower</code> for name keys (<code>field</code>, <code>column_name</code>), type keys (<code>type</code>, <code>data_type</code>), null keys (<code>null</code>, <code>is_nullable</code>). Falls back to <code>0:name, 1:type</code> if not found.</li>
+<li><strong>Check if first row is header</strong> — looks for known header words; if none, treat row 0 as data (handles header-less pastes like <code>id INT\nname VARCHAR(100)</code>).</li>
+<li><strong>For each data row</strong>: <code>col_name = parts[name_idx]</code>, <code>sql_type = parts[type_idx]</code>, <code>nullable</code> from <code>Null</code> column (<code>NO</code>→<code>False</code>, <code>YES</code>→<code>True</code>, <code>NOT NULL</code>→<code>False</code>). Also handles <code>null</code> values inside single-column pastes like <code>id INT NOT NULL</code> via regex fallback.</li>
+<li>Generate code as above.</li>
+</ol>
+<p><em>Accepts:</em></p>
+<div class="codehilite"><pre><span></span><code><span class="n">MySQL</span><span class="p">:</span><span class="w">  </span><span class="n">Field</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Type</span><span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="n">Null</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Key</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Default</span>
+<span class="w">        </span><span class="n">id</span><span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="n">NO</span><span class="w">   </span><span class="o">|</span><span class="w"> </span><span class="n">PRI</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">NULL</span>
+
+<span class="n">Postgres</span><span class="p">:</span><span class="w"> </span><span class="n">column_name</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">data_type</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">is_nullable</span>
+<span class="w">          </span><span class="n">id</span><span class="w">          </span><span class="o">|</span><span class="w"> </span><span class="n">integer</span><span class="w">           </span><span class="o">|</span><span class="w"> </span><span class="n">NO</span>
+<span class="w">          </span><span class="n">bio</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">character</span><span class="w"> </span><span class="n">varying</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">YES</span>
+
+<span class="n">CSV</span><span class="p">:</span><span class="w">    </span><span class="n">column_name</span><span class="p">,</span><span class="n">data_type</span><span class="p">,</span><span class="n">is_nullable</span>
+<span class="w">        </span><span class="n">id</span><span class="p">,</span><span class="n">integer</span><span class="p">,</span><span class="n">NO</span>
+
+<span class="n">Markdown</span><span class="p">:</span>
+<span class="o">|</span><span class="w"> </span><span class="n">Field</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Type</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Null</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|-------|--------------|------|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">id</span><span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w">      </span><span class="o">|</span><span class="w"> </span><span class="n">NO</span><span class="w">   </span><span class="o">|</span>
+</code></pre></div>
+
+<h4 id="c-live-db-workflow-post-apiconnect-or-fetch_schema_via_inspector">C. Live DB Workflow (<code>POST /api/connect</code> or <code>fetch_schema_via_inspector()</code>)</h4>
+<div class="codehilite"><pre><span></span><code><span class="nx">User</span><span class="w"> </span><span class="nx">fills</span><span class="p">:</span><span class="w"> </span><span class="nx">db_type</span><span class="p">,</span><span class="w"> </span><span class="nx">host</span><span class="p">,</span><span class="w"> </span><span class="nx">port</span><span class="p">,</span><span class="w"> </span><span class="nx">user</span><span class="p">,</span><span class="w"> </span><span class="nx">password</span><span class="p">,</span><span class="w"> </span><span class="nx">database</span><span class="p">,</span><span class="w"> </span><span class="nx">table</span><span class="p">,</span><span class="w"> </span><span class="nx">schema</span>
+<span class="w">      </span><span class="err">│</span>
+<span class="w">      </span><span class="err">▼</span>
+<span class="nx">build_connection_string</span><span class="p">()</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">SQLAlchemy</span><span class="w"> </span><span class="nx">URL</span>
+<span class="w">      </span><span class="err">│</span>
+<span class="w">      </span><span class="err">├─</span><span class="w"> </span><span class="nx">mysql</span><span class="p">:</span><span class="w">      </span><span class="nx">mysql</span><span class="o">+</span><span class="nx">pymysql</span><span class="p">:</span><span class="c1">//user:pass@host:3306/db</span>
+<span class="w">      </span><span class="err">├─</span><span class="w"> </span><span class="nx">postgres</span><span class="p">:</span><span class="w">   </span><span class="nx">postgresql</span><span class="o">+</span><span class="nx">psycopg2</span><span class="p">:</span><span class="c1">//user:pass@host:5432/db</span>
+<span class="w">      </span><span class="err">├─</span><span class="w"> </span><span class="nx">sqlite</span><span class="p">:</span><span class="w">     </span><span class="nx">sqlite</span><span class="p">:</span><span class="c1">////tmp/demo.db or /path/to.db</span>
+<span class="w">      </span><span class="err">├─</span><span class="w"> </span><span class="nx">mssql</span><span class="p">:</span><span class="w">      </span><span class="nx">mssql</span><span class="o">+</span><span class="nx">pymssql</span><span class="p">:</span><span class="c1">//...</span>
+<span class="w">      </span><span class="err">├─</span><span class="w"> </span><span class="nx">oracle</span><span class="p">:</span><span class="w">     </span><span class="nx">oracle</span><span class="o">+</span><span class="nx">cx_oracle</span><span class="p">:</span><span class="c1">//...</span>
+<span class="w">      </span><span class="err">└─</span><span class="w"> </span><span class="nx">duckdb</span><span class="p">:</span><span class="w">     </span><span class="nx">duckdb</span><span class="p">:</span><span class="c1">////path</span>
+<span class="w">      </span><span class="err">│</span>
+<span class="w">      </span><span class="err">▼</span>
+<span class="nx">create_engine</span><span class="p">(</span><span class="nx">url</span><span class="p">)</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">inspect</span><span class="p">(</span><span class="nx">engine</span><span class="p">)</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">inspector</span><span class="p">.</span><span class="nx">get_columns</span><span class="p">(</span><span class="nx">table</span><span class="p">,</span><span class="w"> </span><span class="nx">schema</span><span class="p">=</span><span class="nx">schema</span><span class="p">)</span>
+<span class="w">      </span><span class="err">│</span>
+<span class="w">      </span><span class="err">▼</span>
+<span class="nx">columns_from_inspector</span><span class="p">()</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="p">[{</span><span class="nx">name</span><span class="p">,</span><span class="w"> </span><span class="nx">sql_type</span><span class="p">=</span><span class="nx">str</span><span class="p">(</span><span class="k">type</span><span class="p">),</span><span class="w"> </span><span class="nx">nullable</span><span class="p">,</span><span class="w"> </span><span class="nx">raw</span><span class="p">}]</span>
+<span class="w">      </span><span class="err">│</span>
+<span class="w">      </span><span class="err">▼</span>
+<span class="nx">generate_pyspark_code</span><span class="p">()</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">same</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nx">DDL</span>
+</code></pre></div>
+
+<p><strong>Special case:</strong> <code>sqlite + :memory:</code> → creates <code>/tmp/demo_ddl2spark.db</code> with a sample <code>employees</code> table (to demo without a real DB). The file is recreated on each request.</p>
+<p>Fallback: if <code>get_columns</code> fails, tries raw SQL candidates:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">DESCRIBE</span><span class="w"> </span><span class="k">table</span>
+<span class="k">DESCRIBE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">table</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">column_name</span><span class="p">,</span><span class="w"> </span><span class="n">data_type</span><span class="p">,</span><span class="w"> </span><span class="n">is_nullable</span><span class="p">,</span><span class="w"> </span><span class="n">numeric_precision</span><span class="p">,</span><span class="w"> </span><span class="n">numeric_scale</span><span class="p">,</span><span class="w"> </span><span class="n">character_maximum_length</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">information_schema</span><span class="p">.</span><span class="n">columns</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;table&#39;</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">ordinal_position</span>
+</code></pre></div>
+
+<h3 id="33-frontend-editing-layer-v2">3.3 Frontend Editing Layer (v2)</h3>
+<p>All editing is <strong>client-side</strong> (vanilla JS, no build step):</p>
+<ul>
+<li><code>lastResult.columns</code> is the source of truth (mutable array of <code>{name, sql_type, spark_type, spark_type_name, nullable}</code>)</li>
+<li><code>originalColumns</code> is a deep clone for <em>Reset</em> diffing</li>
+<li>Every UI change (<code>onTypeChange</code>, <code>onDecimalChange</code>, <code>onNullableToggle</code>, <code>onNameChange</code>, <code>bulkApply</code>, <code>addColumn</code>, <code>removeColumn</code>) mutates <code>lastResult.columns[i]</code> and calls <code>regenerateFromEdits()</code>:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="n">regenerateFromEdits</span><span class="p">()</span>
+<span class="w">  </span><span class="n">→</span><span class="w"> </span><span class="n">inferImports</span><span class="p">(</span><span class="k">columns</span><span class="p">)</span><span class="w">          </span><span class="o">//</span><span class="w"> </span><span class="n">scan</span><span class="w"> </span><span class="n">spark_type</span><span class="w"> </span><span class="n">strings</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">needed</span><span class="w"> </span><span class="n">imports</span>
+<span class="w">  </span><span class="n">→</span><span class="w"> </span><span class="n">generateCode</span><span class="p">(</span><span class="k">columns</span><span class="p">,</span><span class="w"> </span><span class="k">table</span><span class="p">)</span><span class="w">   </span><span class="o">//</span><span class="w"> </span><span class="n">build</span><span class="w"> </span><span class="n n-Quoted">`from pyspark…`</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n n-Quoted">`StructType([…])`</span>
+<span class="w">  </span><span class="n">→</span><span class="w"> </span><span class="k">update</span><span class="w"> </span><span class="c1">#codeOutput, #jsonOutput, #usageBlock</span>
+<span class="w">  </span><span class="n">→</span><span class="w"> </span><span class="n">toggle</span><span class="w"> </span><span class="p">.</span><span class="n">edited</span><span class="w"> </span><span class="k">row</span><span class="w"> </span><span class="n">highlights</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n n-Quoted">`edited`</span><span class="w"> </span><span class="n">badges</span>
+</code></pre></div>
+
+<p>Imports are ordered canonically: <code>StructType, StructField, StringType, IntegerType, …</code>. This mirrors Python’s <code>generate_pyspark_code</code>.</p>
+<hr />
+<h2 id="4-type-mapping-sql-pyspark">4. Type Mapping — SQL → PySpark</h2>
+<h3 id="41-normalization">4.1 Normalization</h3>
+<p><code>normalize_sql_type(raw)</code>:</p>
+<ul>
+<li>Uppercases, strips <code>UNSIGNED</code>/<code>ZEROFILL</code>, collapses whitespace</li>
+<li>If <code>ARRAY</code>/<code>MAP</code>/<code>STRUCT</code> → return raw verbatim (handled in <code>map_sql_to_spark</code>)</li>
+<li>Else match <code>BASE (params) extra</code> via <code>^([A-Z ]+?)\s*\(\s*([^)]+)\s*\)\s*(.*)$</code></li>
+<li>Else longest-prefix match against <code>TYPE_MAPPING</code> keys (so <code>DOUBLE PRECISION</code> beats <code>DOUBLE</code>)</li>
+<li>Else handle <code>CHARACTER VARYING</code> → <code>VARCHAR</code>, <code>CHAR</code> lengths, or fallback to first word</li>
+</ul>
+<h3 id="42-mapping-table">4.2 Mapping Table</h3>
+<table>
+<thead>
+<tr>
+<th>SQL Base (normalized)</th>
+<th>PySpark</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INT</code>, <code>INTEGER</code>, <code>INT4</code>, <code>MEDIUMINT</code>, <code>SERIAL</code></td>
+<td><code>IntegerType()</code></td>
+<td><code>int(11)</code> display length stripped</td>
+</tr>
+<tr>
+<td><code>BIGINT</code>, <code>INT8</code>, <code>BIGSERIAL</code></td>
+<td><code>LongType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>SMALLINT</code>, <code>INT2</code>, <code>SMALLSERIAL</code></td>
+<td><code>ShortType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>TINYINT</code>, <code>INT1</code>, <code>BYTEINT</code></td>
+<td><code>ByteType()</code></td>
+<td>Except <code>TINYINT(1)</code> → <code>BooleanType</code> (MySQL boolean)</td>
+</tr>
+<tr>
+<td><code>FLOAT</code>, <code>FLOAT4</code>, <code>REAL</code></td>
+<td><code>FloatType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>DOUBLE</code>, <code>DOUBLE PRECISION</code>, <code>FLOAT8</code></td>
+<td><code>DoubleType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>DECIMAL</code>, <code>NUMERIC</code>, <code>NUMBER</code>, <code>DEC</code>, <code>MONEY</code></td>
+<td><code>DecimalType(p,s)</code></td>
+<td><code>DECIMAL</code> alone → <code>DecimalType(10,0)</code></td>
+</tr>
+<tr>
+<td><code>CHAR</code>, <code>NCHAR</code></td>
+<td><code>StringType()</code></td>
+<td><code>CHAR(10)</code> length ignored (Spark String)</td>
+</tr>
+<tr>
+<td><code>VARCHAR</code>, <code>VARCHAR2</code>, <code>NVARCHAR</code>, <code>TEXT</code>, <code>CLOB</code>, <code>STRING</code>, <code>JSON</code>, <code>JSONB</code>, <code>UUID</code>, <code>ENUM</code></td>
+<td><code>StringType()</code></td>
+<td>All text-like</td>
+</tr>
+<tr>
+<td><code>BINARY</code>, <code>VARBINARY</code>, <code>BLOB</code>, <code>BYTEA</code>, <code>BYTES</code></td>
+<td><code>BinaryType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>BOOLEAN</code>, <code>BOOL</code></td>
+<td><code>BooleanType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>BIT</code></td>
+<td><code>BooleanType()</code> if <code>BIT(1)</code> else <code>BinaryType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>DATE</code></td>
+<td><code>DateType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>TIME</code></td>
+<td><code>StringType()</code></td>
+<td>Spark has no TimeType</td>
+</tr>
+<tr>
+<td><code>TIMESTAMP</code>, <code>TIMESTAMPTZ</code>, <code>DATETIME</code>, <code>DATETIME2</code>, <code>TIMESTAMP_NTZ/LTZ/TZ</code></td>
+<td><code>TimestampType()</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>ARRAY&lt;STRING&gt;</code> (Hive)</td>
+<td><code>ArrayType(StringType())</code></td>
+<td>Inner type mapped recursively</td>
+</tr>
+<tr>
+<td><code>MAP&lt;STRING,STRING&gt;</code></td>
+<td><code>MapType(StringType(), StringType())</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Fallbacks:</strong> <code>VARCHAR</code>/<code>CHAR</code> substring → <code>StringType</code>, <code>TIMESTAMP</code> substring → <code>TimestampType</code>, <code>INT</code> substring → <code>IntegerType</code>, else <code>StringType</code>.</p>
+<h3 id="43-decimal-handling">4.3 Decimal Handling</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># SQL: DECIMAL(10,2) → DecimalType(10,2)</span>
+<span class="c1"># SQL: DECIMAL(8)    → DecimalType(8,0)</span>
+<span class="c1"># SQL: DECIMAL        → DecimalType(10,0)  # default</span>
+</code></pre></div>
+
+<p>Frontend exposes <code>precision</code> (1–38) and <code>scale</code> (0–38) number inputs when <code>DecimalType</code> is selected.</p>
+<hr />
+<h2 id="5-installation">5. Installation</h2>
+<h3 id="51-prerequisites">5.1 Prerequisites</h3>
+<ul>
+<li>Python 3.9+ (tested 3.11/3.13)</li>
+<li><code>pip</code> or <code>uv</code></li>
+<li>Optional DB drivers per dialect</li>
+</ul>
+<h3 id="52-clone-install">5.2 Clone &amp; Install</h3>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/YOUR_USERNAME/ddl-to-pyspark.git
+<span class="nb">cd</span><span class="w"> </span>ddl-to-pyspark
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+<span class="c1"># requirements.txt:</span>
+<span class="c1"># Flask==3.1.0</span>
+<span class="c1"># sqlparse==0.5.3</span>
+<span class="c1"># SQLAlchemy==2.0.36</span>
+<span class="c1"># pyspark==3.5.3  # only for type imports; not needed to generate code</span>
+<span class="c1"># pymysql==1.1.1       # for MySQL</span>
+<span class="c1"># psycopg2-binary==2.9.10 # for Postgres</span>
+<span class="c1"># python-dotenv==1.0.1</span>
+</code></pre></div>
+
+<p>Add dialect drivers as needed:</p>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>pymssql<span class="w">      </span><span class="c1"># SQL Server</span>
+pip<span class="w"> </span>install<span class="w"> </span>cx_Oracle<span class="w">    </span><span class="c1"># Oracle</span>
+pip<span class="w"> </span>install<span class="w"> </span>duckdb-engine<span class="w"> </span><span class="c1"># DuckDB</span>
+</code></pre></div>
+
+<h3 id="53-verify">5.3 Verify</h3>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from converter import ddl_to_pyspark; print(ddl_to_pyspark(&#39;CREATE TABLE t (id INT)&#39;))&quot;</span>
+python<span class="w"> </span>app.py<span class="w">  </span><span class="c1"># → http://localhost:5000  (dev server)</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--ddl<span class="w"> </span><span class="s2">&quot;CREATE TABLE t (id INT)&quot;</span><span class="w">  </span><span class="c1"># should print schema</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-usage-web-ui">6. Usage — Web UI</h2>
+<h3 id="61-launch">6.1 Launch</h3>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>app.py
+<span class="c1"># * Running on http://0.0.0.0:5000  (also proxied as https://5000-&lt;id&gt;.e2b.app in hosted env)</span>
+</code></pre></div>
+
+<p>Open the <strong>LIVE PREVIEW</strong> in the IDE, or <code>http://localhost:5000</code> locally.</p>
+<h3 id="62-tabs">6.2 Tabs</h3>
+<h4 id="sql-ddl-tab">SQL DDL Tab</h4>
+<ol>
+<li>Paste DDL (single or multi-table). Example is pre-filled.</li>
+<li><em>(Optional)</em> Table name override — overrides the parsed <code>CREATE TABLE</code> name (useful to avoid collisions).</li>
+<li>Click <strong>⚡ Convert to PySpark</strong>. Chips below let you load <code>MySQL</code>, <code>Postgres</code>, <code>Oracle</code>, <code>Hive</code> examples.</li>
+</ol>
+<h4 id="describe-tab">DESCRIBE Tab</h4>
+<ol>
+<li>Paste any DESCRIBE-style dump (see §3.2B for formats).</li>
+<li>Set <em>Target table name</em> (default <code>my_table</code>) — becomes <code>my_table_schema = StructType(...)</code>.</li>
+<li>Click <strong>Convert DESCRIBE → PySpark</strong>.</li>
+</ol>
+<h4 id="live-db-tab">Live DB Tab</h4>
+<ol>
+<li>Choose <em>Database type</em> — <code>MySQL</code>, <code>PostgreSQL</code>, <code>SQLite</code>, <code>SQL Server</code>, <code>Oracle</code>, <code>DuckDB</code>.</li>
+<li>For server DBs: fill <code>Host</code>, <code>Port</code>, <code>User</code>, <code>Password</code>, <code>Database</code>, <code>Table</code>, optional <code>Schema</code>.</li>
+<li>For SQLite: only <code>Database / File</code> (<code>/path/to.db</code> or <code>:memory:</code>) + <code>Table</code>. Click <strong>Try SQLite demo</strong> to auto-fill and create a demo DB.</li>
+<li>Click <strong>🔌 DESCRIBE from DB</strong>. Credentials are never stored; connection is opened per request and closed.</li>
+</ol>
+<h3 id="63-output-panel">6.3 Output Panel</h3>
+<ul>
+<li><strong>Header:</strong> <code>Python code</code> / <code>JSON</code> selector + <code>⬇ Download .py</code></li>
+<li><strong>Code block:</strong> <code>schema.py — auto-updates on edit</code> with <code>⎘ Copy</code> and <code>Copy imports</code></li>
+<li><strong>Toolbar:</strong> Bulk apply (see §7)</li>
+<li><strong>Preview table:</strong> <code># | Column (editable) | SQL Type | PySpark Type ✎ | Nullable | ↺/✕</code></li>
+<li><strong>Usage block:</strong> <code>from pyspark.sql import SparkSession</code> snippet that also updates on edit</li>
+<li><strong>Status banners:</strong> green <code>✓</code> or red <code>✗</code> under the active input tab</li>
+</ul>
+<hr />
+<h2 id="7-usage-editable-per-field-feature">7. Usage — Editable Per-Field Feature</h2>
+<p><em>This is the v2 addition.</em></p>
+<h3 id="71-inline-editing">7.1 Inline Editing</h3>
+<p>Once converted, each row shows:</p>
+<ul>
+<li><strong>Column name</strong> — <code>&lt;input class="col-name-input"&gt;</code>, type to rename. Change is reflected in <code>StructField("new_name", …)</code>. Empty name defaults to <code>col_N</code>.</li>
+<li><strong>PySpark Type</strong> — <code>&lt;select class="type-select"&gt;</code> with 22 options. Picking one updates <code>c.spark_type</code>, <code>c.spark_type_name</code>, shows/hides decimal inputs, and recomputes imports.</li>
+<li><strong>Decimal params</strong> — only visible when <code>DecimalType</code> is selected: two <code>&lt;input type="number"&gt;</code> for precision/scale. Editing them rebuilds <code>DecimalType(p,s)</code>.</li>
+<li><strong>Nullable</strong> — clickable toggle pill (<code>.toggle</code>): <code>active</code> (green, <code>YES</code>) vs. inactive (grey, <code>NO</code>). Also updates the <code>True/False</code> in <code>StructField</code>.</li>
+<li><strong>Actions</strong> — <code>↺</code> resets that row to its auto-detected original; <code>✕</code> removes the column entirely.</li>
+</ul>
+<p>Edited rows get:</p>
+<ul>
+<li>Purple-tinted background (<code>.edited</code>)</li>
+<li>Orange dot + <code>edited</code> badge</li>
+</ul>
+<h3 id="72-bulk-operations">7.2 Bulk Operations</h3>
+<p>Toolbar above the table:</p>
+<ul>
+<li><strong>Bulk type selector</strong> — pick a type, click <strong>Apply to all</strong> to overwrite every row. Or <strong>Apply to String only</strong> to target only <code>StringType</code> fields (common when you want to coerce all strings to <code>IntegerType</code> etc.).</li>
+<li><strong>↺ Reset all</strong> — restores all rows to <code>originalColumns</code> deep copy.</li>
+<li><strong>+ Add column</strong> — appends <code>new_column_N</code> (<code>VARCHAR(255)</code> → <code>StringType()</code>, <code>nullable=True</code>). You can then rename and retype it (useful to add audit columns like <code>etl_timestamp</code>).</li>
+</ul>
+<h3 id="73-code-regeneration-client-side">7.3 Code Regeneration (Client-Side)</h3>
+<p>All edits call <code>regenerateFromEdits()</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// 1. Infer imports from current spark_type strings</span>
+<span class="nx">inferImports</span><span class="p">(</span><span class="nx">columns</span><span class="p">)</span><span class="w"> </span><span class="c1">// → [&quot;StructType&quot;,&quot;StructField&quot;,&quot;StringType&quot;,…]</span>
+
+<span class="c1">// 2. Build Python code</span>
+<span class="nx">importsStr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sb">`from pyspark.sql.types import </span><span class="si">${</span><span class="nx">imports</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;, &quot;</span><span class="p">)</span><span class="si">}</span><span class="sb">`</span>
+<span class="nx">fields</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">columns</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">c</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="sb">`    StructField(&quot;</span><span class="si">${</span><span class="nx">c</span><span class="p">.</span><span class="nx">name</span><span class="si">}</span><span class="sb">&quot;, </span><span class="si">${</span><span class="nx">c</span><span class="p">.</span><span class="nx">spark_type</span><span class="si">}</span><span class="sb">, </span><span class="si">${</span><span class="nx">c</span><span class="p">.</span><span class="nx">nullable</span><span class="o">?</span><span class="s2">&quot;True&quot;</span><span class="o">:</span><span class="s2">&quot;False&quot;</span><span class="si">}</span><span class="sb">)`</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;,\n&quot;</span><span class="p">)</span>
+<span class="nx">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">importsStr</span><span class="si">}</span><span class="sb">\n\n</span><span class="si">${</span><span class="nx">table</span><span class="si">}</span><span class="sb">_schema = StructType([\n</span><span class="si">${</span><span class="nx">fields</span><span class="si">}</span><span class="sb">\n])\n`</span>
+<span class="nx">lastResult</span><span class="p">.</span><span class="nx">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">code</span>
+<span class="nx">lastResult</span><span class="p">.</span><span class="nx">imports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">importsStr</span>
+<span class="c1">// 3. Update DOM: #codeOutput, #jsonOutput, #usageBlock, badges</span>
+</code></pre></div>
+
+<p>No round-trip to the server is needed; edits are sub-10ms.</p>
+<h3 id="74-example-edit-session">7.4 Example Edit Session</h3>
+<p><em>Start:</em> <code>age TINYINT → ByteType()</code> auto-detected.</p>
+<ol>
+<li>Change <code>age</code> type to <code>ShortType()</code> via dropdown → code updates <code>StructField("age", ShortType(), True)</code></li>
+<li>Toggle <code>email</code> nullable from <code>YES</code> to <code>NO</code> → <code>StructField("email", StringType(), False)</code></li>
+<li>Rename <code>profile_json</code> to <code>profile</code> → field name updates</li>
+<li>For <code>salary</code>, change <code>DecimalType(10,2)</code> precision to <code>18</code> and scale to <code>4</code> → <code>DecimalType(18,4)</code></li>
+<li>Click <strong>Copy</strong> → clipboard has edited schema</li>
+</ol>
+<hr />
+<h2 id="8-usage-rest-api">8. Usage — REST API</h2>
+<p>Base URL: <code>http://localhost:5000</code></p>
+<h3 id="81-health">8.1 Health</h3>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>http://localhost:5000/api/health
+<span class="c1"># {&quot;status&quot;:&quot;ok&quot;,&quot;sqlalchemy&quot;:true}</span>
+</code></pre></div>
+
+<h3 id="82-convert-ddl">8.2 Convert DDL</h3>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:5000/api/convert-ddl<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;ddl&quot;: &quot;CREATE TABLE t (id INT PRIMARY KEY, name VARCHAR(100) NOT NULL, price DECIMAL(10,2))&quot;,</span>
+<span class="s1">    &quot;table_name&quot;: null</span>
+<span class="s1">  }&#39;</span>
+</code></pre></div>
+
+<p>Response:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;tables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;t&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;imports&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DecimalType&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;from pyspark.sql.types import ...\nt_schema = StructType([\n    StructField(\&quot;id\&quot;, IntegerType(), False),\n    StructField(\&quot;name\&quot;, StringType(), False),\n    StructField(\&quot;price\&quot;, DecimalType(10,2), True)\n])\n&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="nt">&quot;sql_type&quot;</span><span class="p">:</span><span class="s2">&quot;INT&quot;</span><span class="p">,</span><span class="nt">&quot;nullable&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;spark_type&quot;</span><span class="p">:</span><span class="s2">&quot;IntegerType()&quot;</span><span class="p">,</span><span class="nt">&quot;spark_type_name&quot;</span><span class="p">:</span><span class="s2">&quot;IntegerType&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="nt">&quot;sql_type&quot;</span><span class="p">:</span><span class="s2">&quot;VARCHAR(100)&quot;</span><span class="p">,</span><span class="nt">&quot;nullable&quot;</span><span class="p">:</span><span class="kc">false</span><span class="p">,</span><span class="nt">&quot;spark_type&quot;</span><span class="p">:</span><span class="s2">&quot;StringType()&quot;</span><span class="p">,</span><span class="nt">&quot;spark_type_name&quot;</span><span class="p">:</span><span class="s2">&quot;StringType&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="s2">&quot;price&quot;</span><span class="p">,</span><span class="nt">&quot;sql_type&quot;</span><span class="p">:</span><span class="s2">&quot;DECIMAL(10,2)&quot;</span><span class="p">,</span><span class="nt">&quot;nullable&quot;</span><span class="p">:</span><span class="kc">true</span><span class="p">,</span><span class="nt">&quot;spark_type&quot;</span><span class="p">:</span><span class="s2">&quot;DecimalType(10,2)&quot;</span><span class="p">,</span><span class="nt">&quot;spark_type_name&quot;</span><span class="p">:</span><span class="s2">&quot;DecimalType&quot;</span><span class="p">}</span>
+<span class="w">      </span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>Multi-table DDL returns <code>count&gt;1</code> and multiple entries in <code>tables</code>. Override name:</p>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:5000/api/convert-ddl<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;ddl&quot;:&quot;CREATE TABLE employees (...)&quot;, &quot;table_name&quot;:&quot;emp_override&quot;}&#39;</span>
+</code></pre></div>
+
+<h3 id="83-convert-describe">8.3 Convert DESCRIBE</h3>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:5000/api/convert-describe<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;describe_text&quot;: &quot;Field | Type | Null\nid | int(11) | NO\nname | varchar(255) | YES&quot;,</span>
+<span class="s1">    &quot;table_name&quot;: &quot;users&quot;</span>
+<span class="s1">  }&#39;</span>
+</code></pre></div>
+
+<h3 id="84-live-connect">8.4 Live Connect</h3>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:5000/api/connect<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;db_type&quot;: &quot;mysql&quot;,</span>
+<span class="s1">    &quot;host&quot;: &quot;localhost&quot;,</span>
+<span class="s1">    &quot;port&quot;: &quot;3306&quot;,</span>
+<span class="s1">    &quot;user&quot;: &quot;root&quot;,</span>
+<span class="s1">    &quot;password&quot;: &quot;secret&quot;,</span>
+<span class="s1">    &quot;database&quot;: &quot;mydb&quot;,</span>
+<span class="s1">    &quot;table&quot;: &quot;employees&quot;,</span>
+<span class="s1">    &quot;schema&quot;: null</span>
+<span class="s1">  }&#39;</span>
+
+<span class="c1"># SQLite demo (creates /tmp/demo_ddl2spark.db):</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:5000/api/connect<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;db_type&quot;:&quot;sqlite&quot;,&quot;database&quot;:&quot;:memory:&quot;,&quot;table&quot;:&quot;employees&quot;}&#39;</span>
+</code></pre></div>
+
+<p>Response is single-object <code>{table, columns, code, imports}</code>.</p>
+<h3 id="85-error-handling">8.5 Error Handling</h3>
+<p>Errors return <code>400</code> (bad input) or <code>500</code> (DB failure) with <code>{"error":"…"}</code>, e.g.:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="s2">&quot;No tables found in DDL. Check syntax or try DESCRIBE mode&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="9-usage-cli">9. Usage — CLI</h2>
+<h3 id="91-help">9.1 Help</h3>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>cli.py<span class="w"> </span>--help
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>usage: cli.py [-h] (--ddl DDL | --ddl-file DDL_FILE | --describe DESCRIBE |
+               --describe-file DESCRIBE_FILE | --connect CONNECT |
+               --stdin) [--table TABLE] [--host HOST] [--port PORT]
+               [--user USER] [--password PASSWORD] [--database DATABASE]
+               [--schema SCHEMA] [--output OUTPUT] [--json] [--no-imports]
+</code></pre></div>
+
+<h3 id="92-examples">9.2 Examples</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. DDL string → stdout</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--ddl<span class="w"> </span><span class="s2">&quot;CREATE TABLE t (id INT PRIMARY KEY, name VARCHAR(100) NOT NULL, price DECIMAL(10,2))&quot;</span>
+
+<span class="c1"># 2. DDL file → output file + JSON sidecar</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--ddl-file<span class="w"> </span>examples/sample_mysql.sql<span class="w"> </span>--output<span class="w"> </span>schema.py<span class="w"> </span>--json
+<span class="c1"># writes schema.py and schema.json, logs column table to stderr</span>
+
+<span class="c1"># 3. DESCRIBE file</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--describe-file<span class="w"> </span>examples/describe_mysql.txt<span class="w"> </span>--table<span class="w"> </span>employees
+
+<span class="c1"># 4. Stdin pipe</span>
+cat<span class="w"> </span>schema.sql<span class="w"> </span><span class="p">|</span><span class="w"> </span>python<span class="w"> </span>cli.py<span class="w"> </span>--stdin<span class="w"> </span>-o<span class="w"> </span>out.py
+
+<span class="c1"># 5. Live MySQL</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--connect<span class="w"> </span>mysql<span class="w"> </span>--host<span class="w"> </span>localhost<span class="w"> </span>--port<span class="w"> </span><span class="m">3306</span><span class="w"> </span>--user<span class="w"> </span>root<span class="w"> </span>--password<span class="w"> </span>secret<span class="w"> </span>--database<span class="w"> </span>mydb<span class="w"> </span>--table<span class="w"> </span>employees
+
+<span class="c1"># 6. Live SQLite</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--connect<span class="w"> </span>sqlite<span class="w"> </span>--database<span class="w"> </span>/tmp/demo.db<span class="w"> </span>--table<span class="w"> </span>employees
+
+<span class="c1"># 7. Strip imports</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--ddl-file<span class="w"> </span>examples/sample_mysql.sql<span class="w"> </span>--no-imports
+
+<span class="c1"># 8. Bulk: DDL with override name</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--ddl-file<span class="w"> </span>hive.sql<span class="w"> </span>--table<span class="w"> </span>sales_fact<span class="w"> </span>--output<span class="w"> </span>sales_fact.py
+</code></pre></div>
+
+<h3 id="93-output-stdout">9.3 Output (stdout)</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pyspark.sql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">StructType</span><span class="p">,</span> <span class="n">StructField</span><span class="p">,</span> <span class="n">StringType</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">,</span> <span class="n">DecimalType</span>
+
+<span class="n">t_schema</span> <span class="o">=</span> <span class="n">StructType</span><span class="p">([</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;price&quot;</span><span class="p">,</span> <span class="n">DecimalType</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="kc">True</span><span class="p">)</span>
+<span class="p">])</span>
+</code></pre></div>
+
+<p>Stderr logs a summary table (suppressed when piping):</p>
+<div class="codehilite"><pre><span></span><code><span class="cp"># Columns: 3</span>
+<span class="cp">#  - id                   INT                       -&gt; IntegerType()             nullable=False</span>
+<span class="cp">#  - name                 VARCHAR(100)              -&gt; StringType()              nullable=False</span>
+<span class="cp">#  - price                DECIMAL(10,2)             -&gt; DecimalType(10,2)         nullable=True</span>
+</code></pre></div>
+
+<hr />
+<h2 id="10-usage-python-library">10. Usage — Python Library</h2>
+<h3 id="101-import">10.1 Import</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">converter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ddl_to_pyspark</span><span class="p">,</span> <span class="n">describe_to_pyspark</span><span class="p">,</span> <span class="n">parse_ddl</span><span class="p">,</span> <span class="n">parse_describe_output</span><span class="p">,</span> <span class="n">generate_pyspark_code</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">db_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_connection_string</span><span class="p">,</span> <span class="n">fetch_schema_via_inspector</span>
+</code></pre></div>
+
+<h3 id="102-ddl">10.2 DDL</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">converter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ddl_to_pyspark</span>
+
+<span class="n">ddl</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">CREATE TABLE sales (</span>
+<span class="s2">  order_id BIGINT NOT NULL,</span>
+<span class="s2">  amount DECIMAL(10,2),</span>
+<span class="s2">  is_returned BOOLEAN,</span>
+<span class="s2">  created_at TIMESTAMP,</span>
+<span class="s2">  items ARRAY&lt;STRING&gt;</span>
+<span class="s2">) STORED AS PARQUET;</span>
+<span class="s2">&quot;&quot;&quot;</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">ddl_to_pyspark</span><span class="p">(</span><span class="n">ddl</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;tables&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;code&quot;</span><span class="p">])</span>
+<span class="c1"># from pyspark.sql.types import StructType, StructField, StringType, LongType, DecimalType, BooleanType, TimestampType, ArrayType</span>
+<span class="c1"># sales_schema = StructType([...])</span>
+
+<span class="c1"># Multi-table:</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">ddl_to_pyspark</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;examples/sample_mysql.sql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+<span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;tables&quot;</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="s2">&quot;table&quot;</span><span class="p">],</span> <span class="n">t</span><span class="p">[</span><span class="s2">&quot;code&quot;</span><span class="p">])</span>
+
+<span class="c1"># Override table name:</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">ddl_to_pyspark</span><span class="p">(</span><span class="s2">&quot;CREATE TABLE t (id INT)&quot;</span><span class="p">,</span> <span class="n">table_name_override</span><span class="o">=</span><span class="s2">&quot;my_fact&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="103-describe-text">10.3 DESCRIBE Text</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">converter</span><span class="w"> </span><span class="kn">import</span> <span class="n">describe_to_pyspark</span>
+
+<span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;Field | Type | Null</span>
+<span class="s2">id | int(11) | NO</span>
+<span class="s2">name | varchar(255) | YES&quot;&quot;&quot;</span>
+
+<span class="n">res</span> <span class="o">=</span> <span class="n">describe_to_pyspark</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;code&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+<h3 id="104-live-db-programmatic">10.4 Live DB (Programmatic)</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">db_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_connection_string</span><span class="p">,</span> <span class="n">fetch_schema_via_inspector</span>
+
+<span class="c1"># SQLite file:</span>
+<span class="n">cs</span> <span class="o">=</span> <span class="n">build_connection_string</span><span class="p">(</span><span class="s2">&quot;sqlite&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;/tmp/my.db&quot;</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">fetch_schema_via_inspector</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="s2">&quot;employees&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">res</span><span class="p">[</span><span class="s2">&quot;code&quot;</span><span class="p">])</span>
+
+<span class="c1"># MySQL:</span>
+<span class="n">cs</span> <span class="o">=</span> <span class="n">build_connection_string</span><span class="p">(</span><span class="s2">&quot;mysql&quot;</span><span class="p">,</span> <span class="s2">&quot;localhost&quot;</span><span class="p">,</span> <span class="s2">&quot;3306&quot;</span><span class="p">,</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span> <span class="s2">&quot;secret&quot;</span><span class="p">,</span> <span class="s2">&quot;mydb&quot;</span><span class="p">)</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">fetch_schema_via_inspector</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="s2">&quot;employees&quot;</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">&quot;public&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="105-low-level-parsing">10.5 Low-Level Parsing</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">converter</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_ddl</span><span class="p">,</span> <span class="n">parse_describe_output</span><span class="p">,</span> <span class="n">map_sql_to_spark</span><span class="p">,</span> <span class="n">generate_pyspark_code</span>
+
+<span class="n">tables</span> <span class="o">=</span> <span class="n">parse_ddl</span><span class="p">(</span><span class="s2">&quot;CREATE TABLE t (id INT NOT NULL, name TEXT)&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tables</span><span class="p">)</span> <span class="c1"># [{&quot;table&quot;:&quot;t&quot;,&quot;columns&quot;:[{&quot;name&quot;:&quot;id&quot;,&quot;sql_type&quot;:&quot;INT&quot;,&quot;nullable&quot;:False, &quot;raw&quot;:&quot;...&quot;}]}]</span>
+
+<span class="n">cols</span> <span class="o">=</span> <span class="n">parse_describe_output</span><span class="p">(</span><span class="s2">&quot;id | int | NO</span><span class="se">\n</span><span class="s2">name | varchar(100) | YES&quot;</span><span class="p">)</span>
+<span class="n">code</span><span class="p">,</span> <span class="n">imports_str</span><span class="p">,</span> <span class="n">imports</span> <span class="o">=</span> <span class="n">generate_pyspark_code</span><span class="p">(</span><span class="n">cols</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;t&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">map_sql_to_spark</span><span class="p">(</span><span class="s2">&quot;VARCHAR(255)&quot;</span><span class="p">))</span> <span class="c1"># (&quot;StringType()&quot;, &quot;StringType&quot;, None)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">map_sql_to_spark</span><span class="p">(</span><span class="s2">&quot;DECIMAL(12,4)&quot;</span><span class="p">))</span> <span class="c1"># (&quot;DecimalType(12,4)&quot;, &quot;DecimalType&quot;, &quot;12,4&quot;)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="11-live-database-describe">11. Live Database DESCRIBE</h2>
+<h3 id="111-supported-db-types">11.1 Supported DB Types</h3>
+<table>
+<thead>
+<tr>
+<th><code>db_type</code></th>
+<th>Driver (pip)</th>
+<th>Default Port</th>
+<th>URL Template</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mysql</code></td>
+<td><code>pymysql</code></td>
+<td>3306</td>
+<td><code>mysql+pymysql://user:pass@host:3306/db</code></td>
+</tr>
+<tr>
+<td><code>postgresql</code> / <code>postgres</code></td>
+<td><code>psycopg2-binary</code></td>
+<td>5432</td>
+<td><code>postgresql+psycopg2://user:pass@host:5432/db</code></td>
+</tr>
+<tr>
+<td><code>sqlite</code></td>
+<td>—</td>
+<td>—</td>
+<td><code>sqlite:////path/to.db</code> or <code>sqlite:///:memory:</code></td>
+</tr>
+<tr>
+<td><code>mssql</code> / <code>sqlserver</code></td>
+<td><code>pymssql</code></td>
+<td>1433</td>
+<td><code>mssql+pymssql://user:pass@host:1433/db</code></td>
+</tr>
+<tr>
+<td><code>oracle</code></td>
+<td><code>cx_oracle</code></td>
+<td>1521</td>
+<td><code>oracle+cx_oracle://user:pass@host:1521/?service_name=db</code></td>
+</tr>
+<tr>
+<td><code>duckdb</code></td>
+<td><code>duckdb-engine</code></td>
+<td>—</td>
+<td><code>duckdb:////path.db</code></td>
+</tr>
+</tbody>
+</table>
+<p>Add your driver to <code>requirements.txt</code> as needed.</p>
+<h3 id="112-what-it-fetches">11.2 What It Fetches</h3>
+<p>Only metadata:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">inspector</span><span class="o">.</span><span class="n">get_columns</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">schema</span><span class="p">)</span>
+<span class="c1"># returns: [{&quot;name&quot;: str, &quot;type&quot;: TypeEngine, &quot;nullable&quot;: bool, ...}]</span>
+</code></pre></div>
+
+<p>No <code>SELECT</code> on data. The connection is closed after <code>fetch</code>.</p>
+<h3 id="113-sqlite-memory-demo">11.3 SQLite <code>:memory:</code> Demo</h3>
+<p>When <code>db_type=sqlite</code> and <code>database=:memory:</code>, the server creates <code>/tmp/demo_ddl2spark.db</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">employees</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTOINCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">full_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">age</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">salary</span><span class="w"> </span><span class="nb">REAL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_active</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">hired_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="p">,</span>
+<span class="w">    </span><span class="n">profile_json</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<p>Then connects to that file. This lets you demo <em>Live DB</em> without credentials.</p>
+<hr />
+<h2 id="12-examples-by-database-dialect">12. Examples by Database Dialect</h2>
+<h3 id="121-mysql">12.1 MySQL</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">employees</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="n">AUTO_INCREMENT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">full_name</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">age</span><span class="w"> </span><span class="n">TINYINT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">salary</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">00</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_active</span><span class="w"> </span><span class="n">TINYINT</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="n">hired_at</span><span class="w"> </span><span class="n">DATETIME</span><span class="p">,</span>
+<span class="w">    </span><span class="n">profile_json</span><span class="w"> </span><span class="n">JSON</span><span class="p">,</span>
+<span class="w">    </span><span class="n">avatar</span><span class="w"> </span><span class="nb">BLOB</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<p>→</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pyspark.sql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">StructType</span><span class="p">,</span> <span class="n">StructField</span><span class="p">,</span> <span class="n">StringType</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">,</span> <span class="n">ByteType</span><span class="p">,</span> <span class="n">DecimalType</span><span class="p">,</span> <span class="n">BooleanType</span><span class="p">,</span> <span class="n">BinaryType</span><span class="p">,</span> <span class="n">TimestampType</span>
+
+<span class="n">employees_schema</span> <span class="o">=</span> <span class="n">StructType</span><span class="p">([</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;full_name&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="n">ByteType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;salary&quot;</span><span class="p">,</span> <span class="n">DecimalType</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;is_active&quot;</span><span class="p">,</span> <span class="n">BooleanType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;hired_at&quot;</span><span class="p">,</span> <span class="n">TimestampType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;profile_json&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;avatar&quot;</span><span class="p">,</span> <span class="n">BinaryType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="n">TimestampType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">)</span>
+<span class="p">])</span>
+</code></pre></div>
+
+<h3 id="122-postgresql">12.2 PostgreSQL</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">SERIAL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">username</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">bio</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">balance</span><span class="w"> </span><span class="nb">NUMERIC</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="n">is_verified</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">FALSE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">birth_date</span><span class="w"> </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">last_login</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span>
+<span class="w">    </span><span class="n">avatar</span><span class="w"> </span><span class="n">BYTEA</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<p>→</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pyspark.sql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">StructType</span><span class="p">,</span> <span class="n">StructField</span><span class="p">,</span> <span class="n">StringType</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">,</span> <span class="n">DecimalType</span><span class="p">,</span> <span class="n">BooleanType</span><span class="p">,</span> <span class="n">DateType</span><span class="p">,</span> <span class="n">TimestampType</span><span class="p">,</span> <span class="n">BinaryType</span>
+
+<span class="n">users_schema</span> <span class="o">=</span> <span class="n">StructType</span><span class="p">([</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="n">IntegerType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">False</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;bio&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;balance&quot;</span><span class="p">,</span> <span class="n">DecimalType</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;is_verified&quot;</span><span class="p">,</span> <span class="n">BooleanType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;birth_date&quot;</span><span class="p">,</span> <span class="n">DateType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;last_login&quot;</span><span class="p">,</span> <span class="n">TimestampType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="n">StringType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">),</span>
+    <span class="n">StructField</span><span class="p">(</span><span class="s2">&quot;avatar&quot;</span><span class="p">,</span> <span class="n">BinaryType</span><span class="p">(),</span> <span class="kc">True</span><span class="p">)</span>
+<span class="p">])</span>
+</code></pre></div>
+
+<h3 id="123-oracle">12.3 Oracle</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">EMPLOYEES</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">EMPLOYEE_ID</span><span class="w"> </span><span class="nb">NUMBER</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">FIRST_NAME</span><span class="w"> </span><span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span>
+<span class="w">    </span><span class="n">LAST_NAME</span><span class="w"> </span><span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">EMAIL</span><span class="w"> </span><span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">25</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">SALARY</span><span class="w"> </span><span class="nb">NUMBER</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">HIRE_DATE</span><span class="w"> </span><span class="nb">DATE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">SYSDATE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">IS_MANAGER</span><span class="w"> </span><span class="nb">CHAR</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;N&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">CLOB</span><span class="p">,</span>
+<span class="w">    </span><span class="n">PHOTO</span><span class="w"> </span><span class="nb">BLOB</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<p>→ <code>NUMBER(6)</code>→<code>DecimalType(6,0)</code>, <code>VARCHAR2</code>→<code>StringType</code>, <code>DATE</code>→<code>DateType</code>, <code>CLOB</code>→<code>StringType</code>, <code>BLOB</code>→<code>BinaryType</code></p>
+<h3 id="124-hive-spark-sql">12.4 Hive / Spark SQL</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">sales</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">order_id</span><span class="w"> </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">customer_name</span><span class="w"> </span><span class="n">STRING</span><span class="p">,</span>
+<span class="w">    </span><span class="n">amount</span><span class="w"> </span><span class="n">DOUBLE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">discount</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">is_returned</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="p">,</span>
+<span class="w">    </span><span class="n">order_date</span><span class="w"> </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="p">,</span>
+<span class="w">    </span><span class="n">items</span><span class="w"> </span><span class="nb">ARRAY</span><span class="o">&lt;</span><span class="n">STRING</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">props</span><span class="w"> </span><span class="k">MAP</span><span class="o">&lt;</span><span class="n">STRING</span><span class="p">,</span><span class="n">STRING</span><span class="o">&gt;</span>
+<span class="p">)</span><span class="w"> </span><span class="n">STORED</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">PARQUET</span><span class="p">;</span>
+</code></pre></div>
+
+<p>→ <code>items</code> → <code>ArrayType(StringType())</code>, <code>props</code> → <code>MapType(StringType(), StringType())</code></p>
+<h3 id="125-describe-paste">12.5 DESCRIBE Paste</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Field</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Type</span><span class="w">         </span><span class="o">|</span><span class="w"> </span><span class="n">Null</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Key</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Default</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">Extra</span>
+<span class="n">id</span><span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="nb nb-Type">int</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span><span class="w">      </span><span class="o">|</span><span class="w"> </span><span class="n">NO</span><span class="w">   </span><span class="o">|</span><span class="w"> </span><span class="n">PRI</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">NULL</span><span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="n">auto_increment</span>
+<span class="n">full_name</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">varchar</span><span class="p">(</span><span class="mi">255</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">NO</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">NULL</span><span class="w"> </span><span class="o">|</span>
+<span class="n">salary</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">decimal</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">YES</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="mf">0.00</span><span class="w"> </span><span class="o">|</span>
+</code></pre></div>
+
+<p>→ Same as MySQL DDL above.</p>
+<hr />
+<h2 id="13-sharing-distribution">13. Sharing &amp; Distribution</h2>
+<p>Your workspace <code>/home/user</code> is <strong>git-initialized, committed, and bundled</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">Branch</span><span class="p">:</span><span class="w"> </span><span class="nx">main</span>
+<span class="nx">Commits</span><span class="p">:</span>
+<span class="w">  </span><span class="nx">eddd6b5</span><span class="w"> </span><span class="nx">feat</span><span class="p">:</span><span class="w"> </span><span class="nx">initial</span><span class="w"> </span><span class="nx">commit</span>
+<span class="w">  </span><span class="mi">94</span><span class="nx">fb191</span><span class="w"> </span><span class="nx">feat</span><span class="p">:</span><span class="w"> </span><span class="nx">editable</span><span class="w"> </span><span class="nx">per</span><span class="o">-</span><span class="nx">field</span><span class="w"> </span><span class="nx">data</span><span class="w"> </span><span class="nx">types</span>
+<span class="nx">Files</span><span class="p">:</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">py</span><span class="p">,</span><span class="w"> </span><span class="nx">converter</span><span class="p">.</span><span class="nx">py</span><span class="p">,</span><span class="w"> </span><span class="nx">db_utils</span><span class="p">.</span><span class="nx">py</span><span class="p">,</span><span class="w"> </span><span class="nx">cli</span><span class="p">.</span><span class="nx">py</span><span class="p">,</span><span class="w"> </span><span class="nx">requirements</span><span class="p">.</span><span class="nx">txt</span><span class="p">,</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span><span class="p">,</span><span class="w"> </span><span class="nx">DOCUMENTATION</span><span class="p">.</span><span class="nx">md</span><span class="p">,</span><span class="w"> </span><span class="nx">PUSH_TO_GITHUB</span><span class="p">.</span><span class="nx">md</span><span class="p">,</span><span class="w"> </span><span class="nx">LICENSE</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="nx">gitignore</span><span class="p">,</span><span class="w"> </span><span class="nx">examples</span><span class="o">/</span>
+<span class="nx">Artifacts</span><span class="p">:</span>
+<span class="w">  </span><span class="nx">ddl</span><span class="o">-</span><span class="nx">to</span><span class="o">-</span><span class="nx">pyspark</span><span class="p">.</span><span class="nx">zip</span><span class="w"> </span><span class="p">(</span><span class="mi">33</span><span class="nx">K</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">ddl</span><span class="o">-</span><span class="nx">to</span><span class="o">-</span><span class="nx">pyspark</span><span class="p">.</span><span class="nx">bundle</span><span class="w"> </span><span class="p">(</span><span class="mi">31</span><span class="nx">K</span><span class="p">)</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">git</span><span class="w"> </span><span class="nx">bundle</span><span class="w"> </span><span class="p">(</span><span class="nx">clone</span><span class="w"> </span><span class="nx">via</span><span class="w"> </span><span class="err">`</span><span class="nx">git</span><span class="w"> </span><span class="nx">clone</span><span class="w"> </span><span class="nx">ddl</span><span class="o">-</span><span class="nx">to</span><span class="o">-</span><span class="nx">pyspark</span><span class="p">.</span><span class="nx">bundle</span><span class="err">`</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="131-option-1-push-to-github-recommended">13.1 Option 1 — Push to GitHub (Recommended)</h3>
+<h4 id="a-new-repo">A. New Repo</h4>
+<ol>
+<li>Go to https://github.com/new → <strong>Repository name:</strong> <code>ddl-to-pyspark</code> → <strong>Public/Private</strong> → <em>uncheck</em> <code>Add README/.gitignore/license</code> → <strong>Create</strong>.</li>
+<li>In workspace or local shell:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="nb">cd</span><span class="w"> </span>/home/user
+git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>origin<span class="w"> </span>https://github.com/YOUR_USERNAME/ddl-to-pyspark.git
+git<span class="w"> </span>branch<span class="w"> </span>-M<span class="w"> </span>main
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>main
+<span class="c1"># Username: YOUR_USERNAME</span>
+<span class="c1"># Password: &lt;Personal Access Token from https://github.com/settings/tokens/new — scope `repo`&gt;</span>
+<span class="c1"># Or one-liner (careful with logs):</span>
+git<span class="w"> </span>remote<span class="w"> </span>set-url<span class="w"> </span>origin<span class="w"> </span>https://YOUR_USERNAME:YOUR_TOKEN@github.com/YOUR_USERNAME/ddl-to-pyspark.git
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>main
+</code></pre></div>
+
+<p>SSH alternative:</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>origin<span class="w"> </span>git@github.com:YOUR_USERNAME/ddl-to-pyspark.git
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>main
+</code></pre></div>
+
+<h4 id="b-existing-repo">B. Existing Repo</h4>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>origin<span class="w"> </span>https://github.com/YOUR_USERNAME/existing-repo.git
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>main
+<span class="c1"># --force if you need to overwrite a non-empty repo</span>
+</code></pre></div>
+
+<p><strong>I can push for you:</strong> reply with <code>https://github.com/USER/REPO.git</code> + token and I’ll push immediately.</p>
+<h3 id="132-option-2-upload-via-github-web-ui">13.2 Option 2 — Upload via GitHub Web UI</h3>
+<ol>
+<li>Download <code>ddl-to-pyspark.zip</code> from Files panel.</li>
+<li>On GitHub new repo → <strong>Add file → Upload files</strong> → drag unzipped files → <strong>Commit directly to main</strong>.</li>
+</ol>
+<h3 id="133-option-3-git-bundle">13.3 Option 3 — Git Bundle</h3>
+<p>Share <code>ddl-to-pyspark.bundle</code> — recipients clone without a server:</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>ddl-to-pyspark.bundle<span class="w"> </span>my-copy
+<span class="nb">cd</span><span class="w"> </span>my-copy
+git<span class="w"> </span>remote<span class="w"> </span>add<span class="w"> </span>origin<span class="w"> </span>https://github.com/YOUR_USERNAME/ddl-to-pyspark.git
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>main
+</code></pre></div>
+
+<h3 id="134-option-4-zip-for-teams-email-drive">13.4 Option 4 — Zip for Teams / Email / Drive</h3>
+<p><code>ddl-to-pyspark.zip</code> contains everything except <code>__pycache__</code>/<code>.git</code>. Unzip and run <code>pip install -r requirements.txt &amp;&amp; python app.py</code>.</p>
+<h3 id="135-option-5-make-it-a-pip-package-optional">13.5 Option 5 — Make it a Pip Package (Optional)</h3>
+<p>Create <code>setup.py</code>/<code>pyproject.toml</code> if you want <code>pip install ddl-to-pyspark</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pyproject.toml (example)</span>
+<span class="k">[project]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ddl-to-pyspark&quot;</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;2.1.0&quot;</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Convert SQL DDL/DESCRIBE to PySpark StructType&quot;</span>
+<span class="n">readme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;README.md&quot;</span>
+<span class="n">requires-python</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;&gt;=3.9&quot;</span>
+<span class="n">dependencies</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;Flask&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;SQLAlchemy&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;sqlparse&quot;</span><span class="p">]</span>
+<span class="k">[project.scripts]</span>
+<span class="n">ddl2pyspark</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;cli:main&quot;</span>
+</code></pre></div>
+
+<p>Then <code>python -m build &amp;&amp; twine upload dist/*</code>.</p>
+<hr />
+<h2 id="14-deployment-options">14. Deployment Options</h2>
+<h3 id="141-local-dev">14.1 Local Dev</h3>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>app.py<span class="w">  </span><span class="c1"># debug, auto-reload</span>
+</code></pre></div>
+
+<h3 id="142-production-wsgi">14.2 Production WSGI</h3>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>gunicorn
+gunicorn<span class="w"> </span>-w<span class="w"> </span><span class="m">4</span><span class="w"> </span>-b<span class="w"> </span><span class="m">0</span>.0.0.0:8000<span class="w"> </span>app:app
+<span class="c1"># or: gunicorn app:app  (if app.py defines `app`)</span>
+</code></pre></div>
+
+<h3 id="143-docker">14.3 Docker</h3>
+<p>Create <code>Dockerfile</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.11-slim</span>
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+<span class="k">COPY</span><span class="w"> </span>requirements.txt<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.
+<span class="k">EXPOSE</span><span class="w"> </span><span class="s">5000</span>
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;gunicorn&quot;</span><span class="p">,</span><span class="s2">&quot;-w&quot;</span><span class="p">,</span><span class="s2">&quot;2&quot;</span><span class="p">,</span><span class="s2">&quot;-b&quot;</span><span class="p">,</span><span class="s2">&quot;0.0.0.0:5000&quot;</span><span class="p">,</span><span class="s2">&quot;app:app&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>ddl-to-pyspark<span class="w"> </span>.
+docker<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span><span class="m">5000</span>:5000<span class="w"> </span>ddl-to-pyspark
+</code></pre></div>
+
+<h3 id="144-cloud">14.4 Cloud</h3>
+<ul>
+<li><strong>Streamlit Cloud / Render / Railway / Fly.io:</strong> connect your GitHub repo, set build <code>pip install -r requirements.txt</code>, start <code>gunicorn app:app</code>.</li>
+<li><strong>Databricks Job:</strong> add <code>app.py</code> as a job with <code>Flask</code> — or just use <code>converter.py</code> as a library inside notebooks.</li>
+<li><strong>GitHub Codespaces:</strong> works out-of-the-box (<code>python app.py</code> → preview).</li>
+</ul>
+<h3 id="145-environment-variables-if-you-add-them">14.5 Environment Variables (if you add them)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># .env (optional)</span>
+<span class="nv">FLASK_ENV</span><span class="o">=</span>production
+<span class="nv">PORT</span><span class="o">=</span><span class="m">5000</span>
+<span class="c1"># DB defaults if you want to pre-fill Live DB tab:</span>
+<span class="nv">DEFAULT_DB_HOST</span><span class="o">=</span>localhost
+<span class="nv">DEFAULT_DB_USER</span><span class="o">=</span>etl_user
+</code></pre></div>
+
+<hr />
+<h2 id="15-security-performance">15. Security &amp; Performance</h2>
+<h3 id="security">Security</h3>
+<ul>
+<li><strong>No persistence</strong> — DDL/DESCRIBE is processed in-memory per request; not logged (except app stdout). Live DB credentials are used only to build a transient <code>create_engine</code> URL, never stored.</li>
+<li><strong>DESCRIBE is read-only</strong> — only <code>inspector.get_columns</code> or <code>SELECT</code> from <code>information_schema</code>; no <code>UPDATE/DELETE</code>.</li>
+<li><strong>Token hygiene</strong> — if you push via token in this workspace, remove it after: <code>git remote set-url origin https://github.com/USER/REPO.git</code> or <code>rm ~/.git-credentials</code>. Snapshots exclude <code>.git/config</code> etc. but be cautious.</li>
+<li><strong>Caveat:</strong> dev server (<code>app.run(debug=True)</code>) is not for production; use <code>gunicorn</code> + reverse proxy.</li>
+</ul>
+<h3 id="performance">Performance</h3>
+<ul>
+<li>Parsing is <code>O(n)</code> with single-pass scans; even 200-column DDL converts in &lt;10ms.</li>
+<li>No Spark dependency at conversion time — only code generation. <code>pyspark</code> is optional unless you <code>spark.createDataFrame</code>.</li>
+<li>Bundle size &lt;35K; Docker image ~150 MB (slim).</li>
+</ul>
+<hr />
+<h2 id="16-troubleshooting-faq">16. Troubleshooting &amp; FAQ</h2>
+<p><strong>Q: <code>No tables found in DDL</code></strong></p>
+<ul>
+<li>Your paste might be DESCRIBE output — switch to the <strong>DESCRIBE</strong> tab.</li>
+<li>Or ensure DDL has <code>CREATE TABLE name (...)</code>; the parser also accepts bare column lists (<code>id INT, name TEXT</code>) as a fallback to <code>my_table</code>.</li>
+</ul>
+<p><strong>Q: All types became <code>StringType()</code></strong></p>
+<ul>
+<li>Ensure <code>converter.py</code> is v2 (check <code>normalize_sql_type</code> handles <code>VARCHAR(255)</code> with longest-prefix match). Older buggy regex returned <code>I</code> for <code>INT</code>. Fixed in current.</li>
+</ul>
+<p><strong>Q: <code>TINYINT(1)</code> shows as <code>ByteType</code></strong></p>
+<ul>
+<li>MySQL <code>TINYINT(1)</code> is intentionally mapped to <code>BooleanType</code>. If you want <code>ByteType</code>, change it in the editable dropdown.</li>
+</ul>
+<p><strong>Q: <code>DESCRIBE</code> says header not found</strong></p>
+<ul>
+<li>Header must contain a known word like <code>Field</code>/<code>column_name</code>/<code>Type</code>/<code>Null</code>. If your dump is <code>id | int | NO</code> without header, pre-add a header line <code>Field | Type | Null</code> or paste as <code>id INT NOT NULL</code> and use DDL tab.</li>
+</ul>
+<p><strong>Q: Live DB connection failed</strong></p>
+<ul>
+<li>Check <code>pip install</code> the right driver (<code>pymysql</code> for MySQL, <code>psycopg2-binary</code> for Postgres).</li>
+<li>For <code>mysql+pymysql</code>, ensure <code>host:port</code> reachable and user has <code>SHOW COLUMNS</code> privilege.</li>
+<li>Try SQLite demo first to confirm UI works.</li>
+</ul>
+<p><strong>Q: Decimal precision lost</strong></p>
+<ul>
+<li>SQL <code>DECIMAL</code> without params defaults to <code>DecimalType(10,0)</code>; edit precision/scale inline after conversion.</li>
+</ul>
+<p><strong>Q: <code>ArrayType</code> shows as <code>StringType</code></strong></p>
+<ul>
+<li>Ensure DDL uses Hive syntax <code>ARRAY&lt;STRING&gt;</code> (with angle brackets). <code>ARRAY</code> alone becomes <code>ArrayType(StringType())</code>.</li>
+</ul>
+<p><strong>Q: Push to GitHub 403</strong></p>
+<ul>
+<li>Your token lacks <code>repo</code> scope or you pasted GitHub password instead of PAT. Generate at https://github.com/settings/tokens/new → <strong>Classic</strong> → check <code>repo</code>.</li>
+</ul>
+<p><strong>Q: Port 5000 in use</strong></p>
+<ul>
+<li>Change <code>app.run(port=5001)</code> or <code>lsof -ti:5000 | xargs kill</code>.</li>
+</ul>
+<hr />
+<h2 id="17-project-structure">17. Project Structure</h2>
+<div class="codehilite"><pre><span></span><code><span class="p">.</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">app</span><span class="p">.</span><span class="nx">py</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">Flask</span><span class="w"> </span><span class="nx">app</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">HTML_TEMPLATE</span><span class="w"> </span><span class="p">(</span><span class="nx">single</span><span class="o">-</span><span class="nx">file</span><span class="w"> </span><span class="nx">UI</span><span class="p">,</span><span class="w"> </span><span class="nx">no</span><span class="w"> </span><span class="nx">CDN</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">converter</span><span class="p">.</span><span class="nx">py</span><span class="w">           </span><span class="err">#</span><span class="w"> </span><span class="nx">Core</span><span class="p">:</span><span class="w"> </span><span class="nx">TYPE_MAPPING</span><span class="p">,</span><span class="w"> </span><span class="nx">normalize_sql_type</span><span class="p">,</span><span class="w"> </span><span class="nx">map_sql_to_spark</span><span class="p">,</span>
+<span class="err">│</span><span class="w">                          </span><span class="err">#</span><span class="w">        </span><span class="nx">split_columns</span><span class="p">,</span><span class="w"> </span><span class="nx">clean_ddl</span><span class="p">,</span><span class="w"> </span><span class="nx">parse_ddl</span><span class="p">,</span><span class="w"> </span><span class="nx">parse_describe_output</span><span class="p">,</span>
+<span class="err">│</span><span class="w">                          </span><span class="err">#</span><span class="w">        </span><span class="nx">generate_pyspark_code</span><span class="p">,</span><span class="w"> </span><span class="nx">ddl_to_pyspark</span><span class="p">,</span><span class="w"> </span><span class="nx">describe_to_pyspark</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">db_utils</span><span class="p">.</span><span class="nx">py</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">DB</span><span class="p">:</span><span class="w"> </span><span class="nx">build_connection_string</span><span class="p">,</span><span class="w"> </span><span class="nx">fetch_schema_via_inspector</span><span class="p">,</span>
+<span class="err">│</span><span class="w">                          </span><span class="err">#</span><span class="w">       </span><span class="nx">fetch_schema_via_describe</span><span class="p">,</span><span class="w"> </span><span class="nx">SUPPORTED_DB_TYPES</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">cli</span><span class="p">.</span><span class="nx">py</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">CLI</span><span class="p">:</span><span class="w"> </span><span class="nx">argparse</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">ddl</span><span class="o">/</span><span class="nx">describe</span><span class="o">/</span><span class="nx">connect</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">stdout</span><span class="o">/</span><span class="nx">file</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">requirements</span><span class="p">.</span><span class="nx">txt</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">Flask</span><span class="p">,</span><span class="w"> </span><span class="nx">SQLAlchemy</span><span class="p">,</span><span class="w"> </span><span class="nx">pyspark</span><span class="p">,</span><span class="w"> </span><span class="nx">pymysql</span><span class="p">,</span><span class="w"> </span><span class="nx">psycopg2</span><span class="o">-</span><span class="nx">binary</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">README</span><span class="p">.</span><span class="nx">md</span><span class="w">              </span><span class="err">#</span><span class="w"> </span><span class="nx">Short</span><span class="w"> </span><span class="nx">start</span><span class="w"> </span><span class="nx">guide</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">DOCUMENTATION</span><span class="p">.</span><span class="nx">md</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">This</span><span class="w"> </span><span class="nx">file</span><span class="w"> </span><span class="p">(</span><span class="nx">detailed</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">PUSH_TO_GITHUB</span><span class="p">.</span><span class="nx">md</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="nx">Push</span><span class="w"> </span><span class="nx">instructions</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">LICENSE</span><span class="w">                </span><span class="err">#</span><span class="w"> </span><span class="nx">MIT</span>
+<span class="err">├──</span><span class="w"> </span><span class="p">.</span><span class="nx">gitignore</span><span class="w">             </span><span class="err">#</span><span class="w"> </span><span class="nx">venv</span><span class="p">,</span><span class="w"> </span><span class="nx">__pycache__</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="p">.</span><span class="nx">db</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="nx">env</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">ddl</span><span class="o">-</span><span class="nx">to</span><span class="o">-</span><span class="nx">pyspark</span><span class="p">.</span><span class="nx">zip</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="nx">Distribution</span><span class="w"> </span><span class="nx">ZIP</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">ddl</span><span class="o">-</span><span class="nx">to</span><span class="o">-</span><span class="nx">pyspark</span><span class="p">.</span><span class="nx">bundle</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">Git</span><span class="w"> </span><span class="nx">bundle</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">examples</span><span class="o">/</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="nx">sample_mysql</span><span class="p">.</span><span class="nx">sql</span><span class="w">   </span><span class="err">#</span><span class="w"> </span><span class="nx">CREATE</span><span class="w"> </span><span class="nx">TABLE</span><span class="w"> </span><span class="nx">employees</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">departments</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="nx">describe_mysql</span><span class="p">.</span><span class="nx">txt</span><span class="w"> </span><span class="err">#</span><span class="w"> </span><span class="nx">Field</span><span class="o">|</span><span class="nx">Type</span><span class="o">|</span><span class="nx">Null</span><span class="w"> </span><span class="nx">dump</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nx">employees</span>
+</code></pre></div>
+
+<p>Key functions:</p>
+<ul>
+<li><code>parse_ddl(ddl: str) → List[{"table":str, "columns":[...]}]</code></li>
+<li><code>parse_describe_output(text: str) → List[{"name", "sql_type", "nullable"}]</code></li>
+<li><code>map_sql_to_spark(sql_type_raw: str) → (spark_expr, import_name, params)</code></li>
+<li><code>generate_pyspark_code(columns, table_name) → (code, importsStr, importsList)</code></li>
+<li><code>ddl_to_pyspark(ddl, table_name_override) → {"tables":[...], "count":int}</code></li>
+<li><code>describe_to_pyspark(text, table_name) → {"table", "columns", "code", "imports"}</code></li>
+</ul>
+<hr />
+<h2 id="18-contributing-roadmap">18. Contributing &amp; Roadmap</h2>
+<h3 id="contributing">Contributing</h3>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>checkout<span class="w"> </span>-b<span class="w"> </span>feature/my-type
+<span class="c1"># edit converter.py: add entry to TYPE_MAPPING, adjust normalize_sql_type if needed</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from converter import map_sql_to_spark; print(map_sql_to_spark(&#39;MYTYPE&#39;))&quot;</span>
+python<span class="w"> </span>cli.py<span class="w"> </span>--ddl<span class="w"> </span><span class="s2">&quot;CREATE TABLE t (x MYTYPE)&quot;</span><span class="w">  </span><span class="c1"># manual test</span>
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: add MYTYPE → SparkType&quot;</span>
+git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>feature/my-type<span class="w">  </span><span class="c1"># PR to main</span>
+</code></pre></div>
+
+<h3 id="roadmap-ideas">Roadmap Ideas</h3>
+<ul>
+<li>[ ] <code>STRUCT&lt;…&gt;</code> Hive type → <code>StructType</code> nested</li>
+<li>[ ] <code>from pyspark.sql.types import ...</code> → Spark DDL string <code>schema.simpleString()</code></li>
+<li>[ ] Export to Delta <code>CREATE TABLE</code> or Avro/Parquet schema</li>
+<li>[ ] CSV upload for DESCRIBE (file picker)</li>
+<li>[ ] Column reordering via drag-and-drop</li>
+<li>[ ] Save/load edits to localStorage</li>
+<li>[ ] Dark/light theme toggle</li>
+<li>[ ] PyPI package + <code>pipx</code> tool</li>
+</ul>
+<hr />
+<h2 id="19-appendix-code-snippets">19. Appendix — Code Snippets</h2>
+<h3 id="191-minimal-notebook-usage">19.1 Minimal Notebook Usage</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pyspark.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SparkSession</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">converter</span><span class="w"> </span><span class="kn">import</span> <span class="n">ddl_to_pyspark</span>
+
+<span class="n">ddl</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;schema.sql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<span class="n">code</span> <span class="o">=</span> <span class="n">ddl_to_pyspark</span><span class="p">(</span><span class="n">ddl</span><span class="p">)[</span><span class="s2">&quot;tables&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;code&quot;</span><span class="p">]</span>
+<span class="n">exec</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>  <span class="c1"># defines employees_schema</span>
+<span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([],</span> <span class="n">schema</span><span class="o">=</span><span class="n">employees_schema</span><span class="p">)</span>
+<span class="n">df</span><span class="o">.</span><span class="n">printSchema</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="192-bulk-api-call-python">19.2 Bulk API Call (Python)</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;http://localhost:5000/api/convert-ddl&quot;</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+  <span class="s2">&quot;ddl&quot;</span><span class="p">:</span> <span class="s2">&quot;CREATE TABLE t (id INT, name VARCHAR(50) NOT NULL)&quot;</span>
+<span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;tables&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;code&quot;</span><span class="p">])</span>
+</code></pre></div>
+
+<h3 id="193-cli-in-a-shell-pipeline">19.3 CLI in a Shell Pipeline</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Dump schema from MySQL and pipe to Spark DDL generation without intermediate file</span>
+mysqldump<span class="w"> </span>--no-data<span class="w"> </span>mydb<span class="w"> </span>employees<span class="w"> </span><span class="p">|</span><span class="w"> </span>python<span class="w"> </span>cli.py<span class="w"> </span>--stdin<span class="w"> </span>&gt;<span class="w"> </span>employees_pyspark.py
+cat<span class="w"> </span>employees_pyspark.py<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>StructField
+</code></pre></div>
+
+<h3 id="194-shareable-link-pattern">19.4 Shareable Link Pattern</h3>
+<p>After you push to GitHub, share:</p>
+<ul>
+<li><strong>Repo:</strong> <code>https://github.com/YOUR_USERNAME/ddl-to-pyspark</code></li>
+<li><strong>Live Demo (if deployed):</strong> <code>https://your-app.onrender.com</code></li>
+<li><strong>Zip:</strong> attach <code>ddl-to-pyspark.zip</code> in releases → <code>https://github.com/.../releases/tag/v2.1</code></li>
+<li><strong>Bundle:</strong> <code>git clone https://github.com/.../ddl-to-pyspark.bundle</code></li>
+</ul>
+<hr />
+<p><strong>End of Documentation.</strong> For quick start, see <code>README.md</code>. For push help, see <code>PUSH_TO_GITHUB.md</code>. For code, read <code>converter.py</code> (well-commented). Enjoy — and edit those types! 🎉</p>
+<p><em>Lagos • 2026-09-17 • MIT</em></p>
+
+    <div class="callout" style="margin-top:30px; background: var(--accent-light); border-color: #c4b5fd;">
+      <div class="callout-icon">🎉</div>
+      <div>
+        <b>Enjoy — and edit those types!</b><br/>
+        <span style="color:var(--muted); font-size:13px;">For quick start see <code>README.md</code>. For push help see <code>PUSH_TO_GITHUB.md</code>. For code, read <code>converter.py</code>.</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="footer">
+  <div>Lagos • 2026-09-17 • MIT • <code>main@ee5de21</code> → Docs v2.1 HTML</div>
+  <div>Built with Flask + Vanilla JS • No CDN needed • <code>pip install -r requirements.txt && python app.py</code></div>
+</div>
+
+<script>
+// Highlight active sidebar link on scroll
+const links = document.querySelectorAll('.sidebar a[href^="#"]');
+const headings = [...document.querySelectorAll('.content h1, .content h2, .content h3')].map(h => {
+  h.classList.add('anchor');
+  return h;
+});
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      const id = e.target.id;
+      links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#'+id));
+    }
+  });
+}, { rootMargin: "-30% 0px -60% 0px", threshold: 0 });
+headings.forEach(h => obs.observe(h));
+</script>
+</body>
+</html>
