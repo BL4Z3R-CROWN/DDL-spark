@@ -343,22 +343,80 @@ def parse_ddl(ddl: str) -> List[Dict]:
         # Now split block into column/constraint definitions
         defs = split_columns(block)
         columns = []
+        skipped = []
+        total_defs = len(defs)
         for d in defs:
             d_stripped = d.strip()
             if not d_stripped:
                 continue
             upper = d_stripped.upper()
-            # Skip constraints
-            if upper.startswith("PRIMARY KEY") or upper.startswith("FOREIGN KEY") or upper.startswith("UNIQUE") or upper.startswith("CHECK") or upper.startswith("CONSTRAINT") or upper.startswith("KEY ") or upper.startswith("INDEX") or upper.startswith("EXCLUDE") or upper.startswith("PARTITION") or upper.startswith("CLUSTERED") or upper.startswith("NONCLUSTERED"):
-                continue
-            # Skip table options that somehow got inside (should not)
-            # Parse column: name type ...
-            # Column name may be quoted
+            # Try to parse as column first — if it looks like a column, don't skip
             col_match = re.match(r'^\s*(?:`([^`]+)`|\[([^\]]+)\]|"([^"]+)"|(\w+))\s+(.*)$', d_stripped, re.DOTALL)
             if not col_match:
+                skipped.append(d_stripped)
                 continue
             col_name = col_match.group(1) or col_match.group(2) or col_match.group(3) or col_match.group(4)
             remainder = col_match.group(5).strip()
+            # Heuristic: if col_name is a constraint keyword and remainder does NOT start with a known type,
+            # then this is a table constraint, not a column. Skip it.
+            # This fixes the bug where a column named `key`, `index`, `unique` etc. was incorrectly skipped.
+            constraint_starters = {"PRIMARY", "FOREIGN", "UNIQUE", "CHECK", "CONSTRAINT", "KEY", "INDEX", "EXCLUDE", "PARTITION", "CLUSTERED", "NONCLUSTERED"}
+            upper_name = col_name.upper()
+            # Get first word of remainder
+            first_word = re.match(r'^([A-Z_]+)', remainder.upper())
+            first_word_str = first_word.group(1) if first_word else ""
+            # Known type starters — if remainder starts with a type, it's a column
+            # Build set of known type prefixes (first word)
+            known_type_words = set()
+            for k in TYPE_MAPPING.keys():
+                # Split multi-word like DOUBLE PRECISION -> first word DOUBLE
+                known_type_words.add(k.split()[0])
+            # Add extra types that appear in DDL but not in mapping as separate entries
+            known_type_words.update(["CHARACTER", "CHAR", "VARCHAR", "NVARCHAR", "TEXT", "CLOB", "STRING", "JSON", "UUID", "ENUM", "SET", "XML", "BINARY", "VARBINARY", "BLOB", "BYTEA", "BOOLEAN", "BOOL", "BIT", "DATE", "TIME", "TIMESTAMP", "DATETIME", "SERIAL", "BIGSERIAL", "SMALLSERIAL", "MONEY"])
+            # If col_name is a constraint starter and remainder does NOT start with a known type, treat as constraint
+            if upper_name in constraint_starters:
+                # Special case: PRIMARY KEY, FOREIGN KEY etc. — col_name is PRIMARY and remainder starts with KEY
+                # That's definitely a constraint
+                if upper_name in ("PRIMARY", "FOREIGN") and first_word_str == "KEY":
+                    skipped.append(d_stripped)
+                    continue
+                # For single-word starters like CHECK, CONSTRAINT, EXCLUDE, etc.
+                if upper_name in ("CHECK", "CONSTRAINT", "EXCLUDE", "PARTITION", "CLUSTERED", "NONCLUSTERED"):
+                    skipped.append(d_stripped)
+                    continue
+                # For KEY, INDEX, UNIQUE — need to see if remainder is type or index definition
+                # If remainder starts with known type -> it's a column named `key` etc., keep it
+                # Else if remainder starts with identifier and contains '(' or is index-like, skip
+                if upper_name in ("KEY", "INDEX", "UNIQUE"):
+                    if first_word_str not in known_type_words:
+                        # Likely an index/constraint like `KEY idx_name (col)` or `UNIQUE KEY ...`
+                        # Also check if d_stripped contains '(' — typical for index constraints
+                        # But a column `key VARCHAR(10)` would have first_word VARCHAR which is in known_type_words, so we keep it
+                        skipped.append(d_stripped)
+                        continue
+                    # else: it's a column named key/index/unique with a valid type — keep it
+            # Additional check: if upper (whole line) starts with known table-constraint phrases, skip
+            # This handles `PRIMARY KEY (id)`, `UNIQUE (col)`, `FOREIGN KEY (col) REFERENCES ...`
+            # But we've already handled the primary/foreign case above; this is extra safety for cases where col_name parsing would mis-handle
+            # We only apply this if the line, when parsed as column, has a remainder that does NOT look like a type
+            # Example: `PRIMARY KEY (id)` -> col_name=PRIMARY, remainder=KEY (id) -> first_word KEY not in known_type_words -> skip (above)
+            # So this extra check is for lines like `UNIQUE KEY mykey (col)` where col_name=UNIQUE, remainder=KEY mykey (col)
+            # That would have upper_name UNIQUE and first_word KEY -> we already skip above.
+            # For safety, if the whole line upper starts with constraint phrase and remainder doesn't start with type, skip
+            # We'll keep the old strict checks but only after the heuristic above
+            if upper.startswith("PRIMARY KEY") or upper.startswith("FOREIGN KEY") or (upper.startswith("UNIQUE") and first_word_str not in known_type_words):
+                # For UNIQUE, if it's `UNIQUE (col)` or `UNIQUE KEY` it's a constraint; if it's `UNIQUE INT` (unlikely column name), but we already handled
+                # Check: if line is `UNIQUE INT` -> col_name UNIQUE, remainder INT -> first_word INT is in known_type_words, so we would NOT have skipped above, and we should NOT skip here either
+                # So only skip UNIQUE if first_word not in known_type_words
+                if upper.startswith("PRIMARY KEY") or upper.startswith("FOREIGN KEY"):
+                    skipped.append(d_stripped)
+                    continue
+                if upper.startswith("UNIQUE"):
+                    # If it's UNIQUE with no type after, it's constraint
+                    if first_word_str not in known_type_words:
+                        skipped.append(d_stripped)
+                        continue
+            # If we reach here, it's a column — parse it
             # Remainder starts with type; we need to separate type from constraints
             # Known constraint keywords
             constraint_keywords = [
@@ -424,7 +482,12 @@ def parse_ddl(ddl: str) -> List[Dict]:
             })
 
         if columns:
-            tables.append({"table": table_name, "columns": columns})
+            # Debug: track total definitions vs parsed vs skipped for large tables
+            tables.append({"table": table_name, "columns": columns, "debug": {"total_definitions": total_defs, "parsed_columns": len(columns), "skipped_constraints": len(skipped), "skipped_list": skipped}})
+        else:
+            # Even if no columns, keep debug for troubleshooting
+            if total_defs > 0:
+                tables.append({"table": table_name, "columns": [], "debug": {"total_definitions": total_defs, "parsed_columns": 0, "skipped_constraints": len(skipped), "skipped_list": skipped}})
         pos = end + 1
 
     # If no CREATE TABLE found, try to parse as simple column list (e.g., just columns without CREATE)
@@ -715,11 +778,16 @@ def ddl_to_pyspark(ddl: str, table_name_override: Optional[str] = None) -> Dict:
         tname = table_name_override or t["table"]
         code, imports_str, imports = generate_pyspark_code(t["columns"], table_name=tname)
         json_schema = generate_json_schema(t["columns"])
+        debug = t.get("debug", {})
         results.append({
             "table": tname,
             "columns": json_schema,
             "code": code,
             "imports": imports_str,
+            "debug": debug,
+            "parsed_count": len(json_schema),
+            "total_definitions": debug.get("total_definitions", len(json_schema)),
+            "skipped_count": debug.get("skipped_constraints", 0),
         })
     return {"tables": results, "count": len(results)}
 

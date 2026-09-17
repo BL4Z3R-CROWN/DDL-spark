@@ -320,6 +320,7 @@ hired_at | datetime | YES |  | NULL | </textarea>
             <label style="margin:0">Column preview <span style="font-weight:400; text-transform:none; letter-spacing:0; color:var(--muted); font-size:11px;">— click type to change • toggle nullable • inline rename</span></label>
             <span id="tableBadge" class="badge"></span>
           </div>
+          <div id="parseDebug" class="hidden" style="margin-top:10px; padding:10px 12px; border-radius:10px; font-size:12px; display:none;"></div>
 
           <!-- Bulk toolbar -->
           <div class="toolbar" id="bulkToolbar">
@@ -691,6 +692,36 @@ function renderResult(data){
   document.getElementById('emptyState').classList.add('hidden');
   document.getElementById('resultArea').classList.remove('hidden');
   document.getElementById('tableBadge').textContent = lastTables.length>1 ? `${lastTables.length} tables • showing: ${lastResult.table} • editable` : `Table: ${lastResult.table} • ${lastResult.columns.length} fields • editable`;
+  // Show parse debug: total vs parsed vs skipped (helps diagnose missing fields)
+  const dbg = lastResult.debug || {};
+  const total = dbg.total_definitions ?? lastResult.columns.length;
+  const parsed = lastResult.parsed_count ?? lastResult.columns.length;
+  const skipped = lastResult.skipped_count ?? 0;
+  const dbgEl = document.getElementById('parseDebug');
+  if(dbgEl){
+    if(total && typeof skipped==='number'){
+      const pct = total ? Math.round(parsed/total*100) : 100;
+      let html = `📊 <b>Input:</b> ${total} definitions → <b>Parsed:</b> ${parsed} columns`;
+      if(skipped>0) html += ` + <b>Skipped:</b> ${skipped} constraints (indexes/keys/checks)`;
+      html += ` — <span style="color:${pct<80?'#f59e0b':'#10b981'}">${pct}% captured</span>`;
+      if(dbg.skipped_list && dbg.skipped_list.length>0 && skipped>0){
+        html += `<details style="margin-top:6px"><summary style="cursor:pointer; color:var(--muted)">Show skipped constraints (${skipped})</summary><code style="display:block; margin-top:6px; white-space:pre-wrap; background:var(--card); padding:8px; border-radius:8px; border:1px solid var(--border); font-size:11px;">${dbg.skipped_list.join("\n")}</code></details>`;
+      }
+      if(parsed < total && skipped===0){
+        html = `⚠️ <b>Mismatch:</b> Input had ${total} definitions but only ${parsed} parsed and 0 skipped as constraints — some fields may have been mis-parsed. Check column names with backticks or types with commas (e.g., ENUM). ` + html;
+        dbgEl.style.background = 'rgba(245,158,11,.12)'; dbgEl.style.border = '1px solid rgba(245,158,11,.3)'; dbgEl.style.color = '#fde68a';
+      } else if(parsed===total){
+        dbgEl.style.background = 'rgba(16,185,129,.08)'; dbgEl.style.border = '1px solid rgba(16,185,129,.2)'; dbgEl.style.color = '#6ee7b7';
+      } else {
+        dbgEl.style.background = 'var(--card2)'; dbgEl.style.border = '1px solid var(--border)'; dbgEl.style.color = 'var(--muted)';
+      }
+      dbgEl.innerHTML = html;
+      dbgEl.style.display = 'block';
+      dbgEl.classList.remove('hidden');
+    } else {
+      dbgEl.style.display = 'none';
+    }
+  }
   
   // If multiple tables, show selector
   if(lastTables.length>1){
