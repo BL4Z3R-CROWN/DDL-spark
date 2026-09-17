@@ -298,13 +298,14 @@ hired_at | datetime | YES |  | NULL | </textarea>
           <!-- code blocks -->
           <div class="code-block" id="codeBlock">
             <div class="code-head">
-              <span>schema.py — auto-updates on edit</span>
+              <span>schema.py — from pyspark.sql.types only • auto-updates</span>
               <div class="code-actions">
                 <button class="btn btn-ghost btn-sm" onclick="copyCode()">⎘ Copy</button>
                 <button class="btn btn-ghost btn-sm" onclick="copyImports()">Copy imports</button>
               </div>
             </div>
             <pre><code id="codeOutput"></code></pre>
+            <div style="padding:8px 12px; background:#0b0d14; border-top:1px solid var(--border); font-size:11px; color:var(--muted);">Imports are <b style="color:#c4b5fd">only</b> from <code style="background:var(--card2); padding:2px 6px; border-radius:6px; border:1px solid var(--border);">pyspark.sql.types</code> — no other pyspark imports in the main schema file.</div>
           </div>
 
           <div class="code-block hidden" id="jsonBlock">
@@ -359,7 +360,7 @@ hired_at | datetime | YES |  | NULL | </textarea>
           <div id="editHint" class="status info" style="display:block; margin-top:10px; font-size:11px">💡 <b>New:</b> Change any field's type via the dropdown. Decimal precision/scale are editable inline. Code on the left updates instantly. Edits are marked with <span class="edited-dot"></span></div>
 
           <div class="code-block" style="margin-top:12px">
-            <div class="code-head"><span>Quick usage (updates with edits)</span></div>
+            <div class="code-head"><span>Quick usage — main file (pyspark.sql.types only) + example</span></div>
             <pre><code id="usageBlock"></code></pre>
           </div>
         </div>
@@ -466,6 +467,7 @@ function inferImports(columns){
 }
 
 function generateCode(columns, tableName){
+  // Strictly from pyspark.sql.types — only Types, no other pyspark imports
   const imports = inferImports(columns);
   const importsStr = `from pyspark.sql.types import ${imports.join(", ")}`;
   const fields = columns.map(c=>{
@@ -473,7 +475,8 @@ function generateCode(columns, tableName){
     const nullable = c.nullable ? "True" : "False";
     return `    StructField("${nameEsc}", ${c.spark_type}, ${nullable})`;
   }).join(",\n");
-  const code = `${importsStr}\n\n${tableName}_schema = StructType([\n${fields}\n])\n`;
+  // Header comment makes the source explicit: only pyspark.sql.types
+  const code = `# Generated PySpark schema — Types only from pyspark.sql.types\n${importsStr}\n\n${tableName}_schema = StructType([\n${fields}\n])\n`;
   return {code, importsStr, imports};
 }
 
@@ -482,19 +485,20 @@ function regenerateFromEdits(){
   const {code, importsStr} = generateCode(lastResult.columns, lastResult.table);
   lastResult.code = code;
   lastResult.imports = importsStr;
-  // update displays
+  // update displays — main code is ONLY pyspark.sql.types, usage block is separate
   document.getElementById('codeOutput').textContent = code;
   document.getElementById('jsonOutput').textContent = JSON.stringify(lastResult.columns, null, 2);
+  // Usage block keeps SparkSession as an *example* outside the main schema file
   document.getElementById('usageBlock').textContent =
-`from pyspark.sql import SparkSession
-${importsStr}
-
-# ${lastResult.table} schema (edited)
+`# Main schema file (pyspark.sql.types only):
 ${code.trim()}
 
-spark = SparkSession.builder.getOrCreate()
-df = spark.createDataFrame([], schema=${lastResult.table}_schema)
-df.printSchema()`;
+# Example usage (separate file / notebook):
+# from pyspark.sql import SparkSession
+# spark = SparkSession.builder.getOrCreate()
+# df = spark.createDataFrame([], schema=${lastResult.table}_schema)
+# df.printSchema()`;
+}
   // update edit badges
   lastResult.columns.forEach((c,i)=>{
     const badge = document.getElementById(`edit-badge-${i}`);

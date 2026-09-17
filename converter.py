@@ -657,7 +657,7 @@ def generate_pyspark_code(columns: List[Dict], table_name: str = "my_table", inc
 
     imports_str = f"from pyspark.sql.types import {', '.join(ordered_imports)}"
 
-    # Generate StructFields
+    # Generate StructFields — only Types from pyspark.sql.types
     fields = []
     for col in columns:
         spark_expr, _, _ = map_sql_to_spark(col["sql_type"])
@@ -669,11 +669,9 @@ def generate_pyspark_code(columns: List[Dict], table_name: str = "my_table", inc
     fields_block = ",\n".join(fields)
     schema_code = f"{table_name}_schema = StructType([\n{fields_block}\n])" if table_name else f"schema = StructType([\n{fields_block}\n])"
 
-    # Also generate alternative: DDL string for spark
-    # e.g., "id INT, name STRING"
-    # Not needed now
-
-    full_code = f"{imports_str}\n\n{schema_code}\n" if include_imports else f"{schema_code}\n"
+    # Header makes it explicit: only pyspark.sql.types
+    header = "# Generated PySpark schema — Types only from pyspark.sql.types"
+    full_code = f"{header}\n{imports_str}\n\n{schema_code}\n" if include_imports else f"{header}\n{schema_code}\n"
 
     # Generate also createDataFrame example and DDL helper
     example = f"""
