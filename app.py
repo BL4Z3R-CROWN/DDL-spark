@@ -498,7 +498,6 @@ ${code.trim()}
 # spark = SparkSession.builder.getOrCreate()
 # df = spark.createDataFrame([], schema=${lastResult.table}_schema)
 # df.printSchema()`;
-}
   // update edit badges
   lastResult.columns.forEach((c,i)=>{
     const badge = document.getElementById(`edit-badge-${i}`);
